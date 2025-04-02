@@ -18,3 +18,17 @@ make install
 ```
 
 now the pyverilog parser should work
+
+
+
+## ok now what
+
+given adjency list of the graph, and parsed longest delay (tbd how doing this but dont sweat yet), what to do?
+- sample?
+- gen testbench
+    - encoding and decoding outputs w/ AN encodings
+- run sim
+- get results
+- profit
+
+

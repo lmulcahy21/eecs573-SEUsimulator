@@ -1,2 +1,4 @@
 env/
 iverilog
+*.txt
+a.py
