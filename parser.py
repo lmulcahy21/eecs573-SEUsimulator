@@ -7,25 +7,8 @@ import pyverilog.vparser.ast as ast
 from pyverilog.vparser.ast import *
 from pyverilog.dataflow.visit import NodeVisitor
 
-from typing import List, Dict, Optional
-
-# ast:
-#  Description
-#       - ModuleDef
-#           - ParamList
-#           - PortList
-
-# Module:        self.lineno = lineno
-        # self.name = name
-        # self.paramlist = paramlist
-        # self.portlist = portlist
-        # self.items = items
-        # self.default_nettype = default_nettype
-
-# Goal: break up the parsed AST into a graph of connections, each wire has ptr to where
-
-# Graph represented by adjacency list
-# Nodes are both inputs and intermediate wires
+from typing import List, Dict, Optional, Tuple
+from queue import LifoQueue
 
 class GraphWire:
     """Represents a wire in the netlist, with connections to driving/driven gates."""
@@ -35,6 +18,9 @@ class GraphWire:
         self.loads: List[GraphGate] = []  # Gates that load this wire (None if primary output)
         self.is_input: bool = is_input   # True if primary input
         self.is_output: bool = is_output  # True if primary output
+
+        self.output_distance: int = 0  # Distance to the output wire (for delay calculation)
+        self.output_delay: int = 0     # Delay to the output wire (for delay calculation)
 
     def __repr__(self):
         return f"Wire({self.name}, driver={self.driver.name if self.driver else None}, loads={[g.name for g in self.loads]}, is_input={self.is_input}, is_output={self.is_output})"
@@ -92,19 +78,24 @@ class GraphGate:
             return (self.inputs, self.output)
 
 
-    def __init__(self, gate_instance: Instance, delay: Optional[float] = None):
+    def __init__(self, gate_instance: Instance, wires: Dict[str, GraphWire], delay: Optional[float] = 1):
         self.name: str = gate_instance.name            # Instance name (e.g., "U3")
         self.gate_type: str = gate_instance.module  # Gate type (e.g., "xor2s2")
-        self.delay: int = delay          # Propagation delay (if specified)
+        self.delay: int = delay          # Propagation delay (default 1)
+        self.inputs: List[GraphWire] = []      # Input wires
+        self.output: Optional[GraphWire] = None # Output wire
+
+        self.output_distance: int = 0  # Distance to the output wire (for delay calculation)
+        self.output_delay: int = 0     # Delay to the output wire (for delay calculation)
+
         # process the portlist to get input/output wires
         visitor = self.GateVisitor()
         visitor.visit(gate_instance)
-
-        self.inputs: List[str] = visitor.inputs # Input wires
-        self.output: Optional[str] = visitor.output  # Output wire
+        self.inputs = [wires[s] for s in visitor.inputs]
+        self.output = wires[visitor.output] if visitor.output else None
 
     def __repr__(self):
-        return f"Gate({self.name}, type={self.gate_type}, inputs={[w for w in self.inputs]}, output={self.output if self.output else None})"
+        return f"""Gate({self.name}, type={self.gate_type}, inputs={[w.name for w in self.inputs]}, output={self.output.name if self.output else None})"""
 
 
 
@@ -129,33 +120,66 @@ class Netlist:
             return
 
     def parse_module(self, ast):
-        # Track primary inputs/outputs first
+        # Declarations of all necessary wires between gates
+        # and the gates themselves will be before they are used
+        # in module instantiations, so can process in one pass
+        output_wires: List[GraphWire] = []
         for node in ast.children():
             match node:
-                case Paramlist():
-                    continue
-                case Portlist():
-                    # input/output ports, syntactic sugar and declared in the module, structural verilog
-                    continue
                 case Decl():
-                    # process declaration, can be input, output, wire
+                    # process declarations,  inputs/outputs/wires
                     for decl in node.children():
                         self._parse_decl(decl)
-                case _:
-                    # ignore gate instantiation on first pass, ensure have full wire mapping
-                    continue
-        # Now process gate instances
-        for node in ast.children():
-            # process instances
-            match node:
                 case InstanceList():
                     # process instances
                     for inst in node.children():
                         # process each instance
-                        self._parse_gate_instance(inst)
+                        self._parse_gate_instance(gate_inst=inst)
                 case _:
-                    # other types of nodes
+                    # ports/parameters ignored, because structural verilog ignores those
                     continue
+
+
+        # now we have all the wires and gates, we can calculate the delays by calculating the distances from outputs
+        # traverse the graph from output wires to input wires, storing the maximum gate distance to an output wire
+
+
+        output_wires = list(filter(lambda v: v.is_output, [v for (k,v) in self.wires.items()]))
+        self.calculate_delays(output_wires)
+        # output wire (0) -> driving gate -> input wires (1) -> driving gates -> input wires (2) -> driving gate (3)
+        return
+
+    def calculate_delays(self, output_wires: List[GraphWire]) -> None:
+        """Calculate the delays from output wires to input wires."""
+        # use a stack to traverse the graph
+        print(output_wires)
+        stack = LifoQueue()
+        for wire in output_wires:
+            stack.put((wire, None))  # push the output wire and None as the previous gate
+
+        # max output delay to a wire/gate is the max of the current and the gate we came from's delay (plus one if we're a gate)
+        while not stack.empty():
+            # stack tuple holds a pair of (wire, gate that takes wire as input) so (wire, load_gate)
+            t: Tuple[GraphWire, GraphGate] = stack.get()
+            wire, load_gate = t
+            if load_gate is not None:
+                # if the load gate is not None, intermed or input wire
+                wire.output_distance = max(wire.output_distance, load_gate.output_distance + 1)
+            driving_gate = None
+            if wire.driver:
+                # process driving gate
+                driving_gate = wire.driver
+                driving_gate.output_distance = max(wire.output_distance, driving_gate.output_distance)
+
+            if driving_gate:
+                # add this gate with all its loads to the stack
+                for input_wire in driving_gate.inputs:
+                    stack.put((input_wire, driving_gate))
+
+        for wire_name, wire in self.wires.items():
+            print(wire, f"output_dist = {wire.output_distance}")
+
+
 
     def _parse_decl(self, decl):
         """Parse a declaration (input, output, wire) and create corresponding GraphWire."""
@@ -183,30 +207,23 @@ class Netlist:
             name = decl.name if width_val == 1 else f"{decl.name}_{i}"
             wire = GraphWire(name, is_input=is_input, is_output=is_output)
             self.add_wire(wire)
+            print(f"added wire {wire}")
 
     def _parse_gate_instance(self, gate_inst: Instance) -> GraphGate:
         """Parse an instance of a gate and create a corresponding GraphGate."""
         # create a gate instance
-        gate = GraphGate(gate_inst)
+        gate = GraphGate(gate_inst, self.wires)
         self.add_gate(gate)
         # connect the gate to the input wires that drives it
-        for input_name in gate.inputs:
-            if input_name not in self.wires.keys():
-                print(f"Warning: Input wire {input_name} not found for gate {gate.name}")
-                continue
-            wire = self.wires[input_name]
-            wire.add_load(gate)
-
+        for input_wire in gate.inputs:
+            input_wire.add_load(gate)
         # connect the gate to the output wire it drives
         if gate.output:
-            if gate.output not in self.wires.keys():
-                print(f"Warning: Output wire {gate.output} not found for gate {gate.name}")
-                return gate
             # connect the gate to the wire
-            wire = self.wires[gate.output]
-            wire.add_driver(gate)
+            gate.output.add_driver(gate)
         else:
             print(f"Warning: Gate {gate.name} has no output wire")
+        print(f"made gate {gate}")
         return gate
 
 
@@ -249,6 +266,7 @@ def main():
         print("Gates:")
         for gate in netlist.gates.values():
             print(gate)
+
 
 
 
