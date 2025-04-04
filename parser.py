@@ -18,12 +18,12 @@ class GraphWire:
         self.loads: List[GraphGate] = []  # Gates that load this wire (None if primary output)
         self.is_input: bool = is_input   # True if primary input
         self.is_output: bool = is_output  # True if primary output
-
+        self.width = 0
         self.output_distance: int = 0  # Distance to the output wire (for delay calculation)
         self.output_delay: int = 0     # Delay to the output wire (for delay calculation)
 
     def __repr__(self):
-        return f"Wire({self.name}, driver={self.driver.name if self.driver else None}, loads={[g.name for g in self.loads]}, is_input={self.is_input}, is_output={self.is_output})"
+        return f"Wire({self.name}, driver={self.driver.name if self.driver else None}, loads={[g.name for g in self.loads]}, is_input={self.is_input}, is_output={self.is_output}, distance={self.output_distance})"
     def add_driver(self, gate) -> None:
         """Add a gate as a driver for this wire."""
         if self.driver is None:
@@ -102,6 +102,8 @@ class GraphGate:
 class Netlist:
     """Maintains the graph of wires and gates parsed from the AST."""
     def __init__(self):
+        self.inputs: List[Tuple[str, int]] = [] # signal name, width
+        self.outputs: List[Tuple[str, int]] = [] # signal name, width
         self.wires: Dict[str, GraphWire] = {}  # name -> Wire
         self.gates: Dict[str, GraphGate] = {}  # name -> Gate
 
@@ -184,10 +186,6 @@ class Netlist:
                 for input_wire in driving_gate.inputs:
                     stack.put((input_wire, driving_gate))
 
-        for wire_name, wire in self.wires.items():
-            print(wire, f"output_dist = {wire.output_distance}, delay = {wire.output_delay}")
-
-
 
     def _parse_decl(self, decl):
         """Parse a declaration (input, output, wire) and create corresponding GraphWire."""
@@ -208,7 +206,11 @@ class Netlist:
             width: Width = decl.width
             width_val = int(width.msb.value) - int(width.lsb.value) + 1
 
-
+        if is_input:
+            # add (name, width)
+            self.inputs.append((decl.name, width_val))
+        if is_output:
+            self.outputs.append((decl.name, width_val))
         # create a wire for each bit in the declaration
         for i in range(width_val):
             # create a wire for the graph
@@ -269,6 +271,12 @@ def main():
 
     for module_name, netlist in visitor.module_netlists.items():
         print(f"Module: {module_name}")
+        print("Inputs:")
+        for input in netlist.inputs:
+            print(input)
+        print("Outputs:")
+        for output in netlist.outputs:
+            print(output)
         print("Wires:")
         for wire in netlist.wires.values():
             print(wire)
