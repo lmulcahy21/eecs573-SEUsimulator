@@ -257,6 +257,12 @@ class NetListVisitor(NodeVisitor):
         netlist.parse_module(node)
         self.module_netlists[node.name] = netlist
         return
+    
+def parse_netlist(netlist_filename: str):
+    ast, directives = parse([netlist_filename])
+    visitor = NetListVisitor()
+    visitor.visit(ast)
+    return visitor.module_netlists.items()
 
 def main():
     parser = argparse.ArgumentParser(description="Nathan")
