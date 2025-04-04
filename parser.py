@@ -215,13 +215,15 @@ class Netlist:
         """Parse an instance of a gate and create a corresponding GraphGate."""
         # create a gate instance
         gate = GraphGate(gate_inst, self.wires)
+        # gate has references to all wires it connects to, both loads and drive
         self.add_gate(gate)
         # connect the gate to the input wires that drives it
         for input_wire in gate.inputs:
+            # store reference to the gate in the input wire
             input_wire.add_load(gate)
         # connect the gate to the output wire it drives
         if gate.output:
-            # connect the gate to the wire
+            # store reference to the gate in the output wire
             gate.output.add_driver(gate)
         else:
             print(f"Warning: Gate {gate.name} has no output wire")
@@ -234,6 +236,7 @@ class NetListVisitor(NodeVisitor):
     def __init__(self):
         super().__init__()
         self.module_netlists: Dict[str, Netlist] = {}  # module name -> Netlist
+
     def visit(self, node):
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
