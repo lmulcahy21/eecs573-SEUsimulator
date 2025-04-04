@@ -57,7 +57,7 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     tb_module_defines_gen += f"`define NUM_CYCLES {num_cycles}\n"
 
     tb_net_names_gen = ""
-    tb_net_names_gen += "\tstring net_names[NUM_CYCLES] = '{\n"
+    tb_net_names_gen += "\tstring net_names[`NUM_CYCLES] = '{\n"
     for i in range(0, len(fault_nets)):
         tb_net_names_gen += f"\t\t\"dut.{fault_nets[i]}\""
         if i != (len(fault_nets) - 1):
