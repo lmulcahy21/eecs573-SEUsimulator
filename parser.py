@@ -105,9 +105,13 @@ class Netlist:
         self.wires: Dict[str, GraphWire] = {}  # name -> Wire
         self.gates: Dict[str, GraphGate] = {}  # name -> Gate
 
+        self.wires_list: List[str] = [] # wire names
+        self.gates_list: List[str] = [] # gate names
+
     def add_wire(self, wire: GraphWire) -> None:
         if wire.name not in self.wires:
             self.wires[wire.name] = wire
+            self.wires_list.append(wire.name)
         else:
             print(f"Warning: Wire {wire.name} already exists, skipping addition.")
             return
@@ -115,6 +119,7 @@ class Netlist:
     def add_gate(self, gate: GraphGate) -> None:
         if gate.name not in self.gates:
             self.gates[gate.name] = gate
+            self.gates_list.append(gate.name)
         else:
             print(f"Warning: Gate {gate.name} already exists, skipping addition.")
             return
