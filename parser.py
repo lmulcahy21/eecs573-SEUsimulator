@@ -165,11 +165,14 @@ class Netlist:
             if load_gate is not None:
                 # if the load gate is not None, intermed or input wire
                 wire.output_distance = max(wire.output_distance, load_gate.output_distance + 1)
+                wire.output_delay = max(wire.output_delay, load_gate.output_delay) # don't add, because gates come with own delay
             driving_gate = None
             if wire.driver:
-                # process driving gate
+                # process driving gate, should only ever happen once per gate BUT JUST IN CASE
                 driving_gate = wire.driver
                 driving_gate.output_distance = max(wire.output_distance, driving_gate.output_distance)
+                # delay is max of wire output delay + self delay, max is just for sanity, should only get set once
+                driving_gate.output_delay = max(wire.output_delay + driving_gate.delay, driving_gate.output_delay)
 
             if driving_gate:
                 # add this gate with all its loads to the stack
@@ -177,7 +180,7 @@ class Netlist:
                     stack.put((input_wire, driving_gate))
 
         for wire_name, wire in self.wires.items():
-            print(wire, f"output_dist = {wire.output_distance}")
+            print(wire, f"output_dist = {wire.output_distance}, delay = {wire.output_delay}")
 
 
 
@@ -207,7 +210,6 @@ class Netlist:
             name = decl.name if width_val == 1 else f"{decl.name}_{i}"
             wire = GraphWire(name, is_input=is_input, is_output=is_output)
             self.add_wire(wire)
-            print(f"added wire {wire}")
 
     def _parse_gate_instance(self, gate_inst: Instance) -> GraphGate:
         """Parse an instance of a gate and create a corresponding GraphGate."""
@@ -223,7 +225,6 @@ class Netlist:
             gate.output.add_driver(gate)
         else:
             print(f"Warning: Gate {gate.name} has no output wire")
-        print(f"made gate {gate}")
         return gate
 
 
