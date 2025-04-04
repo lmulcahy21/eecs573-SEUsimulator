@@ -102,6 +102,7 @@ class GraphGate:
 class Netlist:
     """Maintains the graph of wires and gates parsed from the AST."""
     def __init__(self):
+        self.name: str
         self.inputs: List[Tuple[str, int]] = [] # signal name, width
         self.outputs: List[Tuple[str, int]] = [] # signal name, width
         self.wires: Dict[str, GraphWire] = {}  # name -> Wire
@@ -130,6 +131,7 @@ class Netlist:
         # Declarations of all necessary wires between gates
         # and the gates themselves will be before they are used
         # in module instantiations, so can process in one pass
+        self.name = ast.name
         output_wires: List[GraphWire] = []
         for node in ast.children():
             match node:
@@ -270,7 +272,7 @@ def main():
     visitor.visit(ast)
 
     for module_name, netlist in visitor.module_netlists.items():
-        print(f"Module: {module_name}")
+        print(f"Module: {netlist.name}")
         print("Inputs:")
         for input in netlist.inputs:
             print(input)
