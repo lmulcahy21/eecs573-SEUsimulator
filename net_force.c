@@ -1,6 +1,20 @@
 #include <stdio.h>
 #include "vpi_user.h"
 
+/**
+ * This file contains C-language functions that interact with the VCS simulation
+ * via the VCS interface. We use this to force and release the values on nets
+ * given the names in string format.
+ * 
+ * See the vcs manual for details:
+ * https://users.ece.utexas.edu/~patt/10s.382N/handouts/vcs.pdf
+ * 
+ * VPI: 17-29
+ * Force and Release: 22-28/22-29 
+ * 
+ * TODO: compile into shared library (add makefile rule)
+ */
+
 // given string name for net, force that net to have specified value
 void force_net_by_name(const char *netname, int value) {
     vpiHandle net_h = vpi_handle_by_name((PLI_BYTE8 *)netname, NULL);
@@ -12,7 +26,7 @@ void force_net_by_name(const char *netname, int value) {
     s_vpi_value val_s;
     val_s.format = vpiIntVal;
     val_s.value.integer = value;
-    vpi_force_value(net_h, &val_s, 0, vpiSuppressTime);
+    vpi_put_value(net_h, &val_s, 0, vpiForceFlag);
 }
 
 void release_net_by_name(const char *netname) {
@@ -22,9 +36,10 @@ void release_net_by_name(const char *netname) {
         return;
     }
 
-    if (vpi_release_force(net_h) != 0) {
-        vpi_printf("Failed to release forced value on the net.\n");
-    }
+    s_vpi_value val_s;
+    val_s.format = vpiIntVal;
+    val_s.value.integer = 0; // this is ignored 
+    vpi_put_value(net_h, &val_s, 0, vpiReleaseFlag);
 }
 
 int get_net_value_by_name(const char *netname) {

@@ -59,7 +59,7 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     tb_net_names_gen = ""
     tb_net_names_gen += "\tstring net_names[`NUM_CYCLES] = '{\n"
     for i in range(0, len(fault_nets)):
-        tb_net_names_gen += f"\t\t\"dut.{fault_nets[i]}\""
+        tb_net_names_gen += f"\t\t\"testbench.dut.{fault_nets[i]}\""
         if i != (len(fault_nets) - 1):
             tb_net_names_gen += ","
         tb_net_names_gen += '\n'
@@ -98,7 +98,7 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     for output in netlist.outputs:
         tb_run_test_gen += f"\t\t{output[0]}_correct = {output[0]};\n"
     tb_run_test_gen += "\t\t//force bitflip\n"
-    tb_run_test_gen += "\t\tforce_net_by_name_dpi(net_name, get_net_value_by_name_dpi(net_name));\n"
+    tb_run_test_gen += "\t\tforce_net_by_name_dpi(net_name, ~get_net_value_by_name_dpi(net_name));\n"
     tb_run_test_gen += "\t\t#(`NS(5)) // allow values to propagate\n"
     tb_run_test_gen += "\t\t//release the net\n"
     tb_run_test_gen += "\t\trelease_net_by_name_dpi(net_name);\n"
