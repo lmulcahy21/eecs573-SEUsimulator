@@ -27,6 +27,7 @@ module testbench();
     import "DPI-C" function int release_net_by_name_dpi(input string netname);
     import "DPI-C" function int get_net_value_by_name_dpi(input string netname);
     integer fd;
+    integer num_masked_faults;
 """
 
 # TB_NET_NAMES_GEN
@@ -37,15 +38,27 @@ module testbench();
 
 # TB_RUN_TEST_GEN
 
-TB_FOOTER = """
+TB_INITIAL_BEGIN = """
     initial begin
-        fd = $fopen("output_gen/tb_output.txt", "w");
+"""
+
+# TB_OPEN_FD_GEN
+
+TB_INITIAL_END = """
+        if (fd == 0) begin
+            $display("Error opening file. Check path and permissions.");
+            $finish;
+        end
+        
+        num_masked_faults = 0;
 
         for (int i = 0; i < `NUM_CYCLES; i++) begin
             run_test(net_names[i]);
         end
 
+        $fwrite(fd, \"%d\\n\", num_masked_faults);
         $fclose(fd);
+        $finish;
     end
 
 endmodule
@@ -88,7 +101,7 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
         tb_dut_decl_gen += '\n'
     tb_dut_decl_gen += "\t);\n"
 
-    tb_run_test_gen = ""
+    tb_run_test_gen = "\n\tlogic masked;\n"
     tb_run_test_gen += "\n\ttask run_test(input string net_name);\n"
     tb_run_test_gen += "\t\t//Drive Inputs\n"
     for input in netlist.inputs:
@@ -100,9 +113,19 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     tb_run_test_gen += "\t\t//force bitflip\n"
     tb_run_test_gen += "\t\tforce_net_by_name_dpi(net_name, ~get_net_value_by_name_dpi(net_name));\n"
     tb_run_test_gen += "\t\t#(`NS(5)) // allow values to propagate\n"
+    tb_run_test_gen += "\t\tmasked =\n"
+    for i in range(0, len(netlist.outputs)):
+        output =  netlist.outputs[i]
+        tb_run_test_gen += f"\t\t\t{output[0]} == {output[0]}_correct"
+        if i != (len(netlist.outputs) - 1):
+            tb_run_test_gen += " &&\n"
+    tb_run_test_gen += ";\n"
+    tb_run_test_gen += "\t\tnum_masked_faults = masked ? num_masked_faults + 1 : num_masked_faults;\n"
     tb_run_test_gen += "\t\t//release the net\n"
     tb_run_test_gen += "\t\trelease_net_by_name_dpi(net_name);\n"
     tb_run_test_gen += "\tendtask\n"
+
+    tb_open_fd_gen = f"\t\tfd = $fopen(\"{os.getcwd()}/generated/tb_output.txt\", \"w\");"
 
 
     # build testbench string
@@ -114,7 +137,9 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     testbench_str += tb_portlist_gen
     testbench_str += tb_dut_decl_gen
     testbench_str += tb_run_test_gen
-    testbench_str += TB_FOOTER
+    testbench_str += TB_INITIAL_BEGIN
+    testbench_str += tb_open_fd_gen
+    testbench_str += TB_INITIAL_END
 
     os.makedirs("generated", exist_ok=True)
     with open("generated/testbench.sv", "w") as f:

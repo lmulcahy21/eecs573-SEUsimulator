@@ -1,24 +1,48 @@
 import argparse
+from analyze_faults import analyze_faults
+from parser import Netlist, parse_netlist
+import os
 
-class Netlist:
-    None
+def validate_args(args) -> bool:
+    # validate module netlist file exists
+    if not os.path.exists(args.module):
+        print("Invalid argument to --module: file not found")
+        return False
 
-def parse_netlist(netlist_filename: str) -> Netlist:
-    # parse the netlist file and store the information in output struct
-    # make chat write this lol
-    return
+    # validate number of faults
+    try:
+        int(args.num_faults)
+    except:
+        print("Invalid argument to --num_faults: must be a positive integer")
+        return False
+    
+    if int(args.num_faults) <= 0:
+        print("Invalid argument to --num_faults: must be a positive integer")
+        return False
+    
+    return True
 
-
-# command line options for providing input and whatever
 def main():
     parser = argparse.ArgumentParser(description="Nathan")
-    parser.add_argument('--input', metavar='FILE', required=True,
+    parser.add_argument('--module', metavar='FILE', required=True,
                         help='Specify the input netlist')
-    parser.add_argument('--period', metavar='PERIOD', )
+    # parser.add_argument('--period', metavar='PERIOD', )
+    # parser.add_argument('--period-unit', metavar='UNIT') 
+    parser.add_argument('--num_faults', metavar='NUM', required=True,
+                        help='Specify the number of faults to inject')
+    # parser.add_argument('--encoding-scheme', metavar='SCHEME', ) #e.g. AN, etc.
+    # parser.add_argument('--setup-time')
+    # parser.add_argument('--hold-time')
     args = parser.parse_args()
 
-    netlist_filename = args.input
-    netlist = parse_netlist(netlist_filename)
+    if not validate_args(args):
+        return
+
+    netlists = parse_netlist(args.module)
+    assert(len(netlists) == 1) # TODO: remove this? not sure.
+    for module_name, netlist in netlists:
+        fmr = analyze_faults(netlist, int(args.num_faults))
+    print(f"\nFMR: {fmr}\n")
 
 # input: netlist
 

@@ -3,3 +3,6 @@ iverilog
 *.txt
 a.py
 generated/
+__pycache__/
+build/
+ucli.key

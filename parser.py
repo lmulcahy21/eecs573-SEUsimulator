@@ -12,13 +12,13 @@ from queue import LifoQueue
 
 class GraphWire:
     """Represents a wire in the netlist, with connections to driving/driven gates."""
-    def __init__(self, name: str, is_input = False, is_output = False):
+    def __init__(self, name: str, is_input = False, is_output = False, width = 1):
         self.name = name              # Wire name (e.g., "n3", "carry_out")
         self.driver: Optional[GraphGate] = None # Gate that drives this wire (None if primary input)
         self.loads: List[GraphGate] = []  # Gates that load this wire (None if primary output)
         self.is_input: bool = is_input   # True if primary input
         self.is_output: bool = is_output  # True if primary output
-        self.width = 0
+        self.width = width
         self.output_distance: int = 0  # Distance to the output wire (for delay calculation)
         self.output_delay: int = 0     # Delay to the output wire (for delay calculation)
 
@@ -217,7 +217,7 @@ class Netlist:
         for i in range(width_val):
             # create a wire for the graph
             name = decl.name if width_val == 1 else f"{decl.name}_{i}"
-            wire = GraphWire(name, is_input=is_input, is_output=is_output)
+            wire = GraphWire(name, is_input=is_input, is_output=is_output, width=width_val)
             self.add_wire(wire)
 
     def _parse_gate_instance(self, gate_inst: Instance) -> GraphGate:
