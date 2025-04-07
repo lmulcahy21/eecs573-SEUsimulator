@@ -49,7 +49,7 @@ TB_INITIAL_END = """
             $display("Error opening file. Check path and permissions.");
             $finish;
         end
-        
+
         num_masked_faults = 0;
 
         for (int i = 0; i < `NUM_CYCLES; i++) begin
@@ -105,7 +105,7 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     tb_run_test_gen += "\n\ttask run_test(input string net_name);\n"
     tb_run_test_gen += "\t\t//Drive Inputs\n"
     for input in netlist.inputs:
-        tb_run_test_gen += f"\t\t{input[0]} = $urandom;\n"
+        tb_run_test_gen += f"\t\tassert(std::randomize({input[0]}));\n"
     tb_run_test_gen += "\t\t#(`NS(5)) // allow values to propagate\n"
     tb_run_test_gen += "\t\t//acquire correct outputs\n"
     for output in netlist.outputs:
