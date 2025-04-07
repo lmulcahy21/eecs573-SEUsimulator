@@ -5,6 +5,7 @@ import random
 #from scipy.stats import poisson
 import subprocess
 import os
+from typing import List
 
 # LAM = 50
 
@@ -14,8 +15,8 @@ GATE_LIB = "/usr/caen/misc/class/eecs470/lib/verilog/lec25dscc25.v"
 VCS_SRC = f"{GATE_LIB} generated/testbench.sv net_force.c"
 SIM_EXE_NAME = "build/simv"
 
-def sample_net(netlist: Netlist) -> str:
-    return random.choice(netlist.wires_list)
+def sample_net(wire_list: List[str]) -> str:
+    return random.choice(wire_list)
 
 # def sample_cycle_time(period_ns: int, lam: int) -> int:
 #     period_ps = 1000 * period_ns
@@ -68,8 +69,9 @@ def analyze_faults(netlist: Netlist, num_faults: int) -> float:
 
     # sample nets
     visible_fault_nets = []
+    filtered_wire_list = wire_names = [v.name for (k, v) in netlist.wires.items() if not v.is_output]
     for _ in range(0, num_faults):
-        net = sample_net(netlist)
+        net = sample_net(filtered_wire_list)
 
         # make sure that if we get a wire with width > 1, we name it properly
         # e.g. we do A[0] instead of A_0.
