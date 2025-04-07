@@ -6,3 +6,6 @@ generated/
 __pycache__/
 build/
 ucli.key
+Makefile
+*.tcl
+

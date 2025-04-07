@@ -12,18 +12,19 @@ from queue import LifoQueue
 
 class GraphWire:
     """Represents a wire in the netlist, with connections to driving/driven gates."""
-    def __init__(self, name: str, is_input = False, is_output = False, width = 1):
+    def __init__(self, name: str, is_input = False, is_output = False):
         self.name = name              # Wire name (e.g., "n3", "carry_out")
         self.driver: Optional[GraphGate] = None # Gate that drives this wire (None if primary input)
         self.loads: List[GraphGate] = []  # Gates that load this wire (None if primary output)
         self.is_input: bool = is_input   # True if primary input
         self.is_output: bool = is_output  # True if primary output
-        self.width = width
+        self.width = 0
         self.output_distance: int = 0  # Distance to the output wire (for delay calculation)
         self.output_delay: int = 0     # Delay to the output wire (for delay calculation)
 
     def __repr__(self):
-        return f"Wire({self.name}, driver={self.driver.name if self.driver else None}, loads={[g.name for g in self.loads]}, is_input={self.is_input}, is_output={self.is_output}, distance={self.output_distance})"
+        return f"Wire({self.name}, driver={self.driver.name if self.driver else None}, loads={[g.name for g in self.loads]}, is_input={self.is_input}, is_output={self.is_output}, distance={self.output_distance}, width={self.width})"
+
     def add_driver(self, gate) -> None:
         """Add a gate as a driver for this wire."""
         if self.driver is None:
@@ -217,7 +218,8 @@ class Netlist:
         for i in range(width_val):
             # create a wire for the graph
             name = decl.name if width_val == 1 else f"{decl.name}_{i}"
-            wire = GraphWire(name, is_input=is_input, is_output=is_output, width=width_val)
+            wire = GraphWire(name, is_input=is_input, is_output=is_output)
+            wire.width = width_val
             self.add_wire(wire)
 
     def _parse_gate_instance(self, gate_inst: Instance) -> GraphGate:
@@ -276,7 +278,6 @@ def main():
     instances = []
     visitor = NetListVisitor()
     visitor.visit(ast)
-
     for module_name, netlist in visitor.module_netlists.items():
         print(f"Module: {netlist.name}")
         print("Inputs:")
@@ -291,7 +292,7 @@ def main():
         print("Gates:")
         for gate in netlist.gates.values():
             print(gate)
-
+        print(f"Num wires: {len(netlist.wires)}")
 
 
 

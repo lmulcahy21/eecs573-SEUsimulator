@@ -1,6 +1,6 @@
 import argparse
 from analyze_faults import analyze_faults
-from parser import Netlist, parse_netlist
+from nathan_parser import Netlist, parse_netlist
 import os
 
 def validate_args(args) -> bool:
@@ -15,11 +15,11 @@ def validate_args(args) -> bool:
     except:
         print("Invalid argument to --num_faults: must be a positive integer")
         return False
-    
+
     if int(args.num_faults) <= 0:
         print("Invalid argument to --num_faults: must be a positive integer")
         return False
-    
+
     return True
 
 def main():
@@ -27,7 +27,7 @@ def main():
     parser.add_argument('--module', metavar='FILE', required=True,
                         help='Specify the input netlist')
     # parser.add_argument('--period', metavar='PERIOD', )
-    # parser.add_argument('--period-unit', metavar='UNIT') 
+    # parser.add_argument('--period-unit', metavar='UNIT')
     parser.add_argument('--num_faults', metavar='NUM', required=True,
                         help='Specify the number of faults to inject')
     # parser.add_argument('--encoding-scheme', metavar='SCHEME', ) #e.g. AN, etc.

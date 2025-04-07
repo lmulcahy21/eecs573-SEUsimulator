@@ -1,4 +1,4 @@
-from parser import Netlist, parse_netlist
+from nathan_parser import Netlist
 from gen_testbench import gen_testbench
 import random
 #import numpy as np
@@ -29,7 +29,7 @@ def sample_net(netlist: Netlist) -> str:
 
 # def sample_pulse_width() -> int:
 #     # exponential or log-normal distribution?
-#     # short much more common than long
+#     # short much more common than longz
 #     return 2
 
 #def analyze_faults(netlist: Netlist, num_faults: int, clock_period_ns: int, setup_time_ns: int, hold_time_ns: int) -> float:
@@ -45,7 +45,7 @@ def analyze_faults(netlist: Netlist, num_faults: int) -> float:
     #     start_time_ps = sample_cycle_time(clock_period_ns, LAM)
     #     width_ps = sample_pulse_width()
     #     end_time_ps = start_time_ps + width_ps
-        
+
     #     clock_period_ps = clock_period_ns * 1000
     #     setup_time_ps = setup_time_ns * 1000
     #     hold_time_ps = hold_time_ns * 1000
@@ -65,7 +65,7 @@ def analyze_faults(netlist: Netlist, num_faults: int) -> float:
     #     else:
     #         net = sample_net(netlist) #TODO: make sure that if you get an input/output wire (i.e. it has width > 0), you gen with brackets
     #         visible_fault_nets.append(net)
-        
+
     # sample nets
     visible_fault_nets = []
     for _ in range(0, num_faults):
@@ -89,7 +89,7 @@ def analyze_faults(netlist: Netlist, num_faults: int) -> float:
     subprocess.run(vcs_cmd, shell=True)
     subprocess.run(f"./{SIM_EXE_NAME}")
 
-    # calculate masking ratio  
+    # calculate masking ratio
     num_masked_faults = 0
     with open("generated/tb_output.txt", "r") as f:
         num_masked_faults = int(f.read().strip())

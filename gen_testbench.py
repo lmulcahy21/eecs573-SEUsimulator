@@ -1,4 +1,4 @@
-from parser import Netlist, parse_netlist
+from nathan_parser import Netlist, parse_netlist
 from typing import List
 import os
 
@@ -81,13 +81,13 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     tb_portlist_gen = ""
     tb_portlist_gen += "\n\t// Input Portlist\n"
     for input in netlist.inputs:
-        tb_portlist_gen += f"\tlogic [{input[1]-1}:0] {input[0]};\n" 
+        tb_portlist_gen += f"\tlogic [{input[1]-1}:0] {input[0]};\n"
     tb_portlist_gen += "\n\t// Output Portlist\n"
     for output in netlist.outputs:
-        tb_portlist_gen += f"\tlogic [{output[1]-1}:0] {output[0]};\n" 
-    tb_portlist_gen += "\n\t// Correct Output Variables for Validation\n" 
+        tb_portlist_gen += f"\tlogic [{output[1]-1}:0] {output[0]};\n"
+    tb_portlist_gen += "\n\t// Correct Output Variables for Validation\n"
     for output in netlist.outputs:
-        tb_portlist_gen += f"\tlogic [{output[1]-1}:0] {output[0]}_correct;\n" 
+        tb_portlist_gen += f"\tlogic [{output[1]-1}:0] {output[0]}_correct;\n"
 
     tb_dut_decl_gen = ""
     tb_dut_decl_gen += f"\n\t{netlist.name} dut (\n"
