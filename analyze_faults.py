@@ -1,8 +1,7 @@
-from nathan_parser import Netlist
+from nathan_parser import Netlist, parse_netlist
 from gen_testbench import gen_testbench
 import random
-#import numpy as np
-#from scipy.stats import poisson
+import numpy as np
 import subprocess
 import os
 from typing import List
@@ -15,23 +14,22 @@ GATE_LIB = "/usr/caen/misc/class/eecs470/lib/verilog/lec25dscc25.v"
 VCS_SRC = f"{GATE_LIB} generated/testbench.sv net_force.c"
 SIM_EXE_NAME = "build/simv"
 
+# TODO: tune these parameters
+PULSE_WIDTH_MEAN = 5000
+PULSE_WIDTH_STDEV = 500
+
+# sample a net to modify from a uniform dist
 def sample_net(wire_list: List[str]) -> str:
     return random.choice(wire_list)
 
-# def sample_cycle_time(period_ns: int, lam: int) -> int:
-#     period_ps = 1000 * period_ns
-#     k_values = np.arange(1, period_ps + 1)
-#     pmf = poisson.pmf(k_values, lam)
+# sample start time in ps from 0 to clock_period from a uniform dist
+def sample_cycle_time(period_ns: int) -> int:
+    return random.randint(0, period_ns * 1000)
 
-#     pmf_normalized = pmf / pmf.sum()
+# sample pulse width from a gaussian dist
+def sample_pulse_width() -> int:
+    return np.round(np.random.normal(PULSE_WIDTH_MEAN, PULSE_WIDTH_STDEV, 1))
 
-#     sample = np.random.choice(k_values, p=pmf_normalized)
-#     return sample
-
-# def sample_pulse_width() -> int:
-#     # exponential or log-normal distribution?
-#     # short much more common than longz
-#     return 2
 
 #def analyze_faults(netlist: Netlist, num_faults: int, clock_period_ns: int, setup_time_ns: int, hold_time_ns: int) -> float:
 
@@ -103,9 +101,7 @@ def analyze_faults(netlist: Netlist, num_faults: int) -> float:
 def test_main():
     netlists = parse_netlist("full_adder_64bit.vg")
     for module_name, netlist in netlists:
-        print("beginning analysis")
         print(f"FMR: {analyze_faults(netlist, 5000)}\n")
 
 if __name__ == '__main__':
-    print("starting")
     test_main()
