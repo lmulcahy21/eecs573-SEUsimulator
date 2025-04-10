@@ -18,6 +18,23 @@ SIM_EXE_NAME = "build/simv"
 PULSE_WIDTH_MEAN = 5000
 PULSE_WIDTH_STDEV = 500
 
+class Pulse:
+    def __init__(self, start_time_ps: int, end_time_ps: int):
+        self.start_time_ps = start_time_ps
+        self.end_time_ps = end_time_ps
+
+class TimingInfo:
+    def __init__(self, clock_period_ns: float, setup_time_ns: float, hold_time_ns: float):
+        self.clock_period_ns = clock_period_ns
+        self.clock_period_ps = clock_period_ns * 1000
+
+        self.setup_time_ns = setup_time_ns
+        self.setup_time_ps = setup_time_ns * 1000
+
+        self.hold_time_ns = hold_time_ns
+        self.hold_time_ps = hold_time_ns * 1000
+
+
 # sample a net to modify from a uniform dist
 def sample_net(wire_list: List[str]) -> str:
     return random.choice(wire_list)
@@ -31,7 +48,25 @@ def sample_pulse_width() -> int:
     return np.round(np.random.normal(PULSE_WIDTH_MEAN, PULSE_WIDTH_STDEV, 1))
 
 
-#def analyze_faults(netlist: Netlist, num_faults: int, clock_period_ns: int, setup_time_ns: int, hold_time_ns: int) -> float:
+def analyze_faults(netlist: Netlist, num_faults: int, clock_period_ns: float, setup_time_ns: float, hold_time_ns: float) -> float:
+    for _ in range(0, num_faults):
+        start_time_ps = sample_cycle_time(clock_period_ns)
+        width_ps = sample_pulse_width()
+        end_time_ps = start_time_ps + width_ps
+
+        pulse = Pulse(start_time_ps, end_time_ps)
+        timing_info = TimingInfo(clock_period_ns, setup_time_ns, hold_time_ns)
+
+        if masked_by_timing(pulse, timing_info):
+            pass
+        elif violates_setup_hold(pulse, timing_info):
+            pass
+        else:
+            # all good yo
+            pass
+            
+    
+    return
 
 def analyze_faults(netlist: Netlist, num_faults: int) -> float:
     # sample nets, start times, and widths for each fault
