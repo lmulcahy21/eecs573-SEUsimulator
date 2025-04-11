@@ -5,13 +5,13 @@
  * This file contains C-language functions that interact with the VCS simulation
  * via the VCS interface. We use this to force and release the values on nets
  * given the names in string format.
- * 
+ *
  * See the vcs manual for details:
  * https://users.ece.utexas.edu/~patt/10s.382N/handouts/vcs.pdf
- * 
+ *
  * VPI: 17-29
- * Force and Release: 22-28/22-29 
- * 
+ * Force and Release: 22-28/22-29
+ *
  * TODO: compile into shared library (add makefile rule)
  */
 
@@ -38,7 +38,7 @@ void release_net_by_name(const char *netname) {
 
     s_vpi_value val_s;
     val_s.format = vpiIntVal;
-    val_s.value.integer = 0; // this is ignored 
+    val_s.value.integer = 0; // this is ignored
     vpi_put_value(net_h, &val_s, 0, vpiReleaseFlag);
 }
 

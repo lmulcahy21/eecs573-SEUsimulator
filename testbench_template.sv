@@ -22,6 +22,11 @@ module testbench();
     integer fd;
 
     // BEGIN GENERATED
+    string net_names[NUM_WIRES]
+    int net_idx[NUM_CYCLES] = '{
+        0, 1, 2, 3, 4,
+        // ...
+    };
     string net_names[NUM_CYCLES] = '{
         "dut.sampled_net1",
         "dut.sampled_net2",
@@ -55,7 +60,7 @@ module testbench();
         .carry_out(carry_out)
     );
     // END GENERATED
-    
+
     // BEGIN GENERATED
     task run_test(input string net_name);
         // drive inputs
@@ -86,7 +91,7 @@ module testbench();
         $fwrite("output_carry_out:%d\t", carry_out);
         $fwrite("\n");
 
-        // release the net 
+        // release the net
         release_net_by_name_dpi(net_name);
         #(`NS(5)) // let it settle
 

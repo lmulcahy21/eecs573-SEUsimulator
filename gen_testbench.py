@@ -27,6 +27,8 @@ module testbench();
     import "DPI-C" function int release_net_by_name_dpi(input string netname);
     import "DPI-C" function int get_net_value_by_name_dpi(input string netname);
     integer fd;
+    integer idx_fd;
+    logic [31:0] net_idx;
     integer num_masked_faults;
 """
 
@@ -51,9 +53,9 @@ TB_INITIAL_END = """
         end
 
         num_masked_faults = 0;
-
         for (int i = 0; i < `NUM_CYCLES; i++) begin
-            run_test(net_names[i]);
+            $readmemh(idx_fd, net_idx);
+            run_test(net_names_dict[net_idx]);
         end
 
         $fwrite(fd, \"%d\\n\", num_masked_faults);
@@ -64,20 +66,41 @@ TB_INITIAL_END = """
 endmodule
 """
 
-def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
+def gen_testbench(netlist: Netlist, fault_nets: List[int], num_cycles: int):
 
+    # Wire defines
     tb_module_defines_gen = ""
     tb_module_defines_gen += f"`define NUM_CYCLES {num_cycles}\n"
+    tb_module_defines_gen += f"`define NUM_WIRES {len(netlist.gates)}\n"
 
     tb_net_names_gen = ""
-    tb_net_names_gen += "\tstring net_names[`NUM_CYCLES] = '{\n"
-    for i in range(0, len(fault_nets)):
-        tb_net_names_gen += f"\t\t\"testbench.dut.{fault_nets[i]}\""
-        if i != (len(fault_nets) - 1):
+    # for each fault net:
+    #   - store name in array in testbench
+    tb_net_names_gen += "\t// Netlist Dict\n"
+    tb_net_names_gen += "\tstring net_names_dict[`NUM_WIRES] = '{\n"
+    for i, (wire_name, wire) in enumerate(netlist.wires.items()):
+        if wire.width > 1:
+            netname, netidx = wire_name.rsplit('_', 1)
+            tb_net_names_gen += f"\t\t\"testbench.dut.{netname}[{netidx}]\""
+        else:
+            tb_net_names_gen += f"\t\t\"testbench.dut.{wire}\""
+        # style and commas
+        if i != (len(netlist.wires) - 1):
             tb_net_names_gen += ","
-        tb_net_names_gen += '\n'
+        if i % 4 == 3:
+            tb_net_names_gen += '\n'
     tb_net_names_gen += "\t};\n"
 
+
+    #   - store index in 32-bit value,
+    # write to generated file ({module}_net_indices_hex.gen)
+    with (open(f"generated/{netlist.name}_net_indices_hex.gen", "w")) as f:
+        for i in range(0, len(fault_nets)):
+            f.write(f"{fault_nets[i]:04x}\n")
+
+    INDEX_FILENAME= f"{os.getcwd()}/generated/{netlist.name}_net_indices_hex.gen"
+
+    # Portlist generation
     tb_portlist_gen = ""
     tb_portlist_gen += "\n\t// Input Portlist\n"
     for input in netlist.inputs:
@@ -88,7 +111,7 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     tb_portlist_gen += "\n\t// Correct Output Variables for Validation\n"
     for output in netlist.outputs:
         tb_portlist_gen += f"\tlogic [{output[1]-1}:0] {output[0]}_correct;\n"
-
+    # Module instantiation
     tb_dut_decl_gen = ""
     tb_dut_decl_gen += f"\n\t{netlist.name} dut (\n"
     tb_dut_decl_gen += "\t\t// Inputs\n"
@@ -100,8 +123,9 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
             tb_dut_decl_gen += ","
         tb_dut_decl_gen += '\n'
     tb_dut_decl_gen += "\t);\n"
-
+    # Testbench informational variables
     tb_run_test_gen = "\n\tlogic masked;\n"
+    # setup task for running tests
     tb_run_test_gen += "\n\ttask run_test(input string net_name);\n"
     tb_run_test_gen += "\t\t//Drive Inputs\n"
     for input in netlist.inputs:
@@ -124,8 +148,9 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     tb_run_test_gen += "\t\t//release the net\n"
     tb_run_test_gen += "\t\trelease_net_by_name_dpi(net_name);\n"
     tb_run_test_gen += "\tendtask\n"
-
+    # open file descriptor for logging
     tb_open_fd_gen = f"\t\tfd = $fopen(\"{os.getcwd()}/generated/tb_output.txt\", \"w\");"
+    tb_open_fd_gen += f"\n\t\tidx_fd = $fopen(\"{INDEX_FILENAME}\", \"r\");\n"
 
 
     # build testbench string

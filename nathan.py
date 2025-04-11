@@ -33,15 +33,20 @@ def main():
     # parser.add_argument('--encoding-scheme', metavar='SCHEME', ) #e.g. AN, etc.
     # parser.add_argument('--setup-time')
     # parser.add_argument('--hold-time')
+    # parser.add_argument('--clock-period')
+    # parser.add_argument('--clock-period-unit')
     args = parser.parse_args()
 
     if not validate_args(args):
+        print("Invalid arguments")
+        parser.print_help()
         return
 
     netlists = parse_netlist(args.module)
+    module_path = args.module
     assert(len(netlists) == 1) # TODO: remove this? not sure.
     for module_name, netlist in netlists:
-        fmr = analyze_faults(netlist, int(args.num_faults))
+        fmr = analyze_faults(netlist, int(args.num_faults), args)
     print(f"\nFMR: {fmr}\n")
 
 # input: netlist

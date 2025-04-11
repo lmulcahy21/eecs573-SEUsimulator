@@ -133,7 +133,6 @@ class Netlist:
         for node in ast.children():
             match node:
                 case Decl():
-                    # process declarations,  inputs/outputs/wires
                     for decl in node.children():
                         self._parse_decl(decl)
                 case InstanceList():
@@ -158,7 +157,7 @@ class Netlist:
     def calculate_delays(self, output_wires: List[GraphWire]) -> None:
         """Calculate the delays from output wires to input wires."""
         # use a stack to traverse the graph
-        print(output_wires)
+        # print(output_wires)
         stack = LifoQueue()
         for wire in output_wires:
             stack.put((wire, None))  # push the output wire and None as the previous gate
@@ -255,7 +254,7 @@ class NetListVisitor(NodeVisitor):
         netlist.parse_module(node)
         self.module_netlists[node.name] = netlist
         return
-    
+
 def parse_netlist(netlist_filename: str):
     ast, directives = parse([netlist_filename])
     visitor = NetListVisitor()

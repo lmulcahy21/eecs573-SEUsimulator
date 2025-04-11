@@ -4,7 +4,7 @@ import random
 import numpy as np
 import subprocess
 import os
-from typing import List
+from typing import List, Tuple
 
 # LAM = 50
 
@@ -34,10 +34,14 @@ class TimingInfo:
         self.hold_time_ns = hold_time_ns
         self.hold_time_ps = hold_time_ns * 1000
 
+def sample_net_index(wire_list: List[str]) -> int:
+    # sample a net to modify from a uniform dist
+    return random.randint(0, len(wire_list) - 1)
 
 # sample a net to modify from a uniform dist
-def sample_net(wire_list: List[str]) -> str:
-    return random.choice(wire_list)
+def sample_net(wire_list: List[str]) -> Tuple[str, int]:
+    idx = sample_net_index(wire_list)
+    return wire_list[idx], idx
 
 # sample start time in ps from 0 to clock_period from a uniform dist
 def sample_cycle_time(period_ns: int) -> int:
@@ -64,11 +68,11 @@ def analyze_faults(netlist: Netlist, num_faults: int, clock_period_ns: float, se
         else:
             # all good yo
             pass
-            
-    
+
+
     return
 
-def analyze_faults(netlist: Netlist, num_faults: int) -> float:
+def analyze_faults(netlist: Netlist, num_faults: int, args) -> float:
     # sample nets, start times, and widths for each fault
     # this is timing stuff do this later
     # visible_fault_nets = []
@@ -104,22 +108,14 @@ def analyze_faults(netlist: Netlist, num_faults: int) -> float:
     visible_fault_nets = []
     filtered_wire_list = wire_names = [v.name for (k, v) in netlist.wires.items() if not v.is_output]
     for _ in range(0, num_faults):
-        net = sample_net(filtered_wire_list)
-
-        # make sure that if we get a wire with width > 1, we name it properly
-        # e.g. we do A[0] instead of A_0.
-        if netlist.wires[net].width > 1:
-            # Split the string into two parts at the last underscore
-            netname, netidx = net.rsplit('_', 1)
-            visible_fault_nets.append(f"{netname}[{netidx}]")
-        else:
-            visible_fault_nets.append(net)
+        net_name, net_idx = sample_net(filtered_wire_list)
+        visible_fault_nets.append(net_idx)
 
     # generate a testbench
     gen_testbench(netlist, visible_fault_nets, num_faults)
 
     # run simulation
-    vcs_cmd = f"{VCS} {VCS_FLAGS} {VCS_SRC} {netlist.name}.vg -o {SIM_EXE_NAME}"
+    vcs_cmd = f"{VCS} {VCS_FLAGS} {VCS_SRC} {args.module} -o {SIM_EXE_NAME}"
     os.makedirs("build", exist_ok=True)
     subprocess.run(vcs_cmd, shell=True)
     subprocess.run(f"./{SIM_EXE_NAME}")
