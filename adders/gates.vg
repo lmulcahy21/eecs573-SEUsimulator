@@ -1,0 +1,39 @@
+/////////////////////////////////////////////////////////////
+// Created by: Synopsys DC Expert(TM) in wire load mode
+// Version   : V-2023.12-SP5
+// Date      : Sun Apr  6 23:09:34 2025
+/////////////////////////////////////////////////////////////
+
+
+module gates ( a, b, y1, y2, y3, y4, y5 );
+  input [3:0] a;
+  input [3:0] b;
+  output [3:0] y1;
+  output [3:0] y2;
+  output [3:0] y3;
+  output [3:0] y4;
+  output [3:0] y5;
+
+
+  xor2s2 U1 ( .DIN1(b[3]), .DIN2(a[3]), .Q(y3[3]) );
+  xor2s2 U2 ( .DIN1(b[2]), .DIN2(a[2]), .Q(y3[2]) );
+  xor2s2 U3 ( .DIN1(b[1]), .DIN2(a[1]), .Q(y3[1]) );
+  xor2s2 U4 ( .DIN1(b[0]), .DIN2(a[0]), .Q(y3[0]) );
+  nnd2s2 U14 ( .DIN1(b[3]), .DIN2(a[3]), .Q(y4[3]) );
+  nnd2s2 U16 ( .DIN1(b[2]), .DIN2(a[2]), .Q(y4[2]) );
+  nnd2s2 U18 ( .DIN1(b[1]), .DIN2(a[1]), .Q(y4[1]) );
+  nnd2s2 U20 ( .DIN1(b[0]), .DIN2(a[0]), .Q(y4[0]) );
+  ib1s1 U21 ( .DIN(y4[0]), .Q(y1[0]) );
+  ib1s1 U22 ( .DIN(y4[1]), .Q(y1[1]) );
+  ib1s1 U23 ( .DIN(y4[2]), .Q(y1[2]) );
+  ib1s1 U24 ( .DIN(y4[3]), .Q(y1[3]) );
+  ib1s1 U25 ( .DIN(y5[0]), .Q(y2[0]) );
+  ib1s1 U26 ( .DIN(y5[1]), .Q(y2[1]) );
+  ib1s1 U27 ( .DIN(y5[2]), .Q(y2[2]) );
+  ib1s1 U28 ( .DIN(y5[3]), .Q(y2[3]) );
+  nor2s1 U29 ( .DIN1(a[0]), .DIN2(b[0]), .Q(y5[0]) );
+  nor2s1 U30 ( .DIN1(a[1]), .DIN2(b[1]), .Q(y5[1]) );
+  nor2s1 U31 ( .DIN1(a[2]), .DIN2(b[2]), .Q(y5[2]) );
+  nor2s1 U32 ( .DIN1(a[3]), .DIN2(b[3]), .Q(y5[3]) );
+endmodule
+
