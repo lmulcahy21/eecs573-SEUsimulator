@@ -58,9 +58,10 @@ def main():
         return
 
     netlists = parse_netlist(args.module)
-    assert(len(netlists) == 1) # TODO: remove this? not sure.
+    assert len(netlists) == 1 # TODO: remove this? not sure.
     for module_name, netlist in netlists:
-        fmr = analyze_faults(netlist, int(args.num_faults))
+        timing_info = TimingInfo(float(args.period), float(args.setup_time, float(args.hold_time)))
+        fmr = analyze_faults(netlist, int(args.num_faults), timing_info)
     print(f"\nFMR: {fmr}\n")
 
 

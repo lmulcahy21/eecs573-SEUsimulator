@@ -2,7 +2,7 @@ from nathan_parser import Netlist, parse_netlist
 from typing import List
 import os
 
-TB_FILENAME = "generated/testbench.sv"
+TB_FILENAME = "generated/testbench/testbench.sv"
 
 TB_HEADER_DEFINES = """
 /**
@@ -125,7 +125,7 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     tb_run_test_gen += "\t\trelease_net_by_name_dpi(net_name);\n"
     tb_run_test_gen += "\tendtask\n"
 
-    tb_open_fd_gen = f"\t\tfd = $fopen(\"{os.getcwd()}/generated/tb_output.txt\", \"w\");"
+    tb_open_fd_gen = f"\t\tfd = $fopen(\"{os.getcwd()}/generated/testbench/tb_output.txt\", \"w\");"
 
 
     # build testbench string
@@ -142,7 +142,8 @@ def gen_testbench(netlist: Netlist, fault_nets: List[str], num_cycles: int):
     testbench_str += TB_INITIAL_END
 
     os.makedirs("generated", exist_ok=True)
-    with open("generated/testbench.sv", "w") as f:
+    os.makedirs("generated/testbench", exist_ok=True)
+    with open("generated/testbench/testbench.sv", "w") as f:
         f.write(testbench_str)
 
 def test_main():

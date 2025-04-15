@@ -4,14 +4,15 @@ import random
 import numpy as np
 import subprocess
 import os
-from typing import List, Tuple
-
-# LAM = 50
+from typing import List
 
 VCS = "vcs"
-VCS_FLAGS = "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED -timescale=1ps/1ps +vpi"
+VCS_FLAGS = "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line \
+             -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC \
+             +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED \
+             -timescale=1ps/1ps +vpi"
 GATE_LIB = "/usr/caen/misc/class/eecs470/lib/verilog/lec25dscc25.v"
-VCS_SRC = f"{GATE_LIB} generated/testbench.sv net_force.c"
+VCS_SRC = f"{GATE_LIB} generated/testbench/testbench.sv net_force.c"
 SIM_EXE_NAME = "build/simv"
 
 # TODO: tune these parameters
@@ -126,13 +127,13 @@ def analyze_faults(netlist: Netlist, num_faults: int, timing_info: TimingInfo) -
         gen_testbench(netlist, visible_fault_nets, len(visible_fault_nets))
 
         # run simulation
-        vcs_cmd = f"{VCS} {VCS_FLAGS} {VCS_SRC} {netlist.name}.vg -o {SIM_EXE_NAME}"
+        vcs_cmd = f"{VCS} {VCS_FLAGS} {VCS_SRC} {netlist.filepath} -o {SIM_EXE_NAME}"
         os.makedirs("build", exist_ok=True)
         subprocess.run(vcs_cmd, shell=True)
         subprocess.run(f"./{SIM_EXE_NAME}")
 
         # calculate masking ratio
-        with open("generated/tb_output.txt", "r") as f:
+        with open("generated/testbench/tb_output.txt", "r") as f:
             num_logic_masked_faults = int(f.read().strip())
 
     fault_mask_ratio = num_logic_masked_faults / num_faults
@@ -145,7 +146,7 @@ def analyze_faults(netlist: Netlist, num_faults: int, timing_info: TimingInfo) -
 
 def test_main():
     print("Running analyze_faults as script")
-    netlists = parse_netlist("full_adder_64bit.vg")
+    netlists = parse_netlist("modules/full_adder_64bit.vg")
     for module_name, netlist in netlists:
         print(f"FMR: {analyze_faults(netlist, 1000000, TimingInfo(5, 0.1, 0.1))}\n")
 
