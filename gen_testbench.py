@@ -2,7 +2,7 @@ from nathan_parser import Netlist, parse_netlist
 from typing import List
 import os
 
-TB_FILENAME = "generated/testbench.sv"
+TB_FILENAME = "generated/testbench/testbench.sv"
 
 TB_HEADER_DEFINES = """
 /**
@@ -29,6 +29,7 @@ module testbench();
     integer fd;
     integer idx_fd;
     logic [31:0] net_idx;
+    logic timing_masked, is_metastable;
     integer num_masked_faults;
 """
 
@@ -42,6 +43,7 @@ module testbench();
 
 TB_INITIAL_BEGIN = """
     int result;
+    logic logic_masked;
     initial begin
 """
 
@@ -58,19 +60,18 @@ TB_INITIAL_END = """
         end
         // Read in the net indices
         num_masked_faults = 0;
-        for (int i = 0; i < `NUM_CYCLES; i++) begin
+        for (int i = 0; i < `num_faults; i++) begin
 
 
-            result = $fscanf(idx_fd, "%x\\n", net_idx);
+            result = $fscanf(idx_fd, "%x %b %b\\n", net_idx, timing_masked, is_metastable);
 
-            if (result != 1) begin
+            if (result != 3) begin
                 $display("Error: Failed to read hex value from file");
                 break;
             end
-            run_test(net_names_dict[net_idx]);
+            run_test(net_names_dict[net_idx], logic_masked);
+            $fwrite(fd, "%s,%d,%b,%b,%b\\n", net_names_dict[net_idx], net_idx, logic_masked, timing_masked, is_metastable);
         end
-
-        $fwrite(fd, \"%d\\n\", num_masked_faults);
         $fclose(fd);
         $finish;
     end
@@ -78,14 +79,15 @@ TB_INITIAL_END = """
 endmodule
 """
 
-def gen_testbench(netlist: Netlist, fault_nets: List[int], num_cycles: int):
+def gen_testbench(netlist: Netlist, num_faults: int):
     # Num wires is number of wires * each wires width
     NUM_WIRES = len(netlist.wires.items())
-    INDEX_FILENAME= f"{os.getcwd()}/generated/{netlist.name}_net_indices_hex.gen"
+    INDEX_FILENAME= f"\"{os.getcwd()}/generated/testbench/{netlist.name}_net_indices_hex.gen\""
+    TB_OUTPUT_FILENAME=f"\"{os.getcwd()}/generated/testbench/tb_output.txt\""
 
     # Wire defines
     tb_module_defines_gen = ""
-    tb_module_defines_gen += f"`define NUM_CYCLES {num_cycles}\n"
+    tb_module_defines_gen += f"`define num_faults {num_faults}\n"
     tb_module_defines_gen += f"`define NUM_WIRES {NUM_WIRES}\n"
 
     tb_net_names_gen = ""
@@ -137,8 +139,10 @@ def gen_testbench(netlist: Netlist, fault_nets: List[int], num_cycles: int):
     tb_dut_decl_gen += "\t);\n"
     # Testbench informational variables
     tb_run_test_gen = "\n\tlogic masked;\n"
+
+
     # setup task for running tests
-    tb_run_test_gen += "\n\ttask run_test(input string net_name);\n"
+    tb_run_test_gen += "\n\ttask run_test(input string net_name, output logic logic_masked);\n"
     tb_run_test_gen += "\t\t//Drive Inputs\n"
     for input in netlist.inputs:
         tb_run_test_gen += f"\t\tassert(std::randomize({input[0]}));\n"
@@ -146,23 +150,25 @@ def gen_testbench(netlist: Netlist, fault_nets: List[int], num_cycles: int):
     tb_run_test_gen += "\t\t//acquire correct outputs\n"
     for output in netlist.outputs:
         tb_run_test_gen += f"\t\t{output[0]}_correct = {output[0]};\n"
+
     tb_run_test_gen += "\t\t//force bitflip\n"
     tb_run_test_gen += "\t\tforce_net_by_name_dpi(net_name, ~get_net_value_by_name_dpi(net_name));\n"
     tb_run_test_gen += "\t\t#(`NS(5)) // allow values to propagate\n"
-    tb_run_test_gen += "\t\tmasked =\n"
+    tb_run_test_gen += "\t\tlogic_masked=\n"
     for i in range(0, len(netlist.outputs)):
         output =  netlist.outputs[i]
         tb_run_test_gen += f"\t\t\t{output[0]} == {output[0]}_correct"
         if i != (len(netlist.outputs) - 1):
             tb_run_test_gen += " &&\n"
     tb_run_test_gen += ";\n"
-    tb_run_test_gen += "\t\tnum_masked_faults = masked ? num_masked_faults + 1 : num_masked_faults;\n"
     tb_run_test_gen += "\t\t//release the net\n"
     tb_run_test_gen += "\t\trelease_net_by_name_dpi(net_name);\n"
     tb_run_test_gen += "\tendtask\n"
+
+
     # open file descriptor for logging
-    tb_open_fd_gen = f"\t\tfd = $fopen(\"{os.getcwd()}/generated/tb_output.txt\", \"w\");"
-    tb_open_fd_gen += f"\n\t\tidx_fd = $fopen(\"{INDEX_FILENAME}\", \"rb\");\n"
+    tb_open_fd_gen = f"\t\tfd = $fopen({TB_OUTPUT_FILENAME}, \"w\");"
+    tb_open_fd_gen += f"\n\t\tidx_fd = $fopen({INDEX_FILENAME}, \"rb\");\n"
 
 
     # build testbench string
@@ -179,7 +185,8 @@ def gen_testbench(netlist: Netlist, fault_nets: List[int], num_cycles: int):
     testbench_str += TB_INITIAL_END
 
     os.makedirs("generated", exist_ok=True)
-    with open("generated/testbench.sv", "w") as f:
+    os.makedirs("generated/testbench", exist_ok=True)
+    with open("generated/testbench/testbench.sv", "w") as f:
         f.write(testbench_str)
 
 def test_main():

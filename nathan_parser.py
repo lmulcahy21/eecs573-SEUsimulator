@@ -104,6 +104,7 @@ class Netlist:
     """Maintains the graph of wires and gates parsed from the AST."""
     def __init__(self):
         self.name: str
+        self.filepath: str
         self.inputs: List[Tuple[str, int]] = [] # signal name, width
         self.outputs: List[Tuple[str, int]] = [] # signal name, width
         self.wires: Dict[str, GraphWire] = {}  # name -> Wire
@@ -239,9 +240,10 @@ class Netlist:
 
 class NetListVisitor(NodeVisitor):
     """Visitor class to traverse AST and construct the netlist per module"""
-    def __init__(self):
+    def __init__(self, netlist_filename: str):
         super().__init__()
         self.module_netlists: Dict[str, Netlist] = {}  # module name -> Netlist
+        self.netlist_filename = netlist_filename
 
     def visit(self, node):
         method = 'visit_' + node.__class__.__name__
@@ -251,13 +253,14 @@ class NetListVisitor(NodeVisitor):
     def visit_ModuleDef(self, node):
         node: ModuleDef = node
         netlist = Netlist()
+        netlist.filepath = self.netlist_filename
         netlist.parse_module(node)
         self.module_netlists[node.name] = netlist
         return
 
 def parse_netlist(netlist_filename: str):
-    ast, directives = parse([netlist_filename])
-    visitor = NetListVisitor()
+    ast, directives = parse(filelist=[netlist_filename], outputdir="./generated/parser")
+    visitor = NetListVisitor(netlist_filename)
     visitor.visit(ast)
     return visitor.module_netlists.items()
 
