@@ -15,8 +15,8 @@ VCS_SRC = f"{GATE_LIB} generated/testbench.sv net_force.c"
 SIM_EXE_NAME = "build/simv"
 
 # TODO: tune these parameters
-PULSE_WIDTH_MEAN = 55
-PULSE_WIDTH_STDEV = 15
+PULSE_WIDTH_MEAN_PS = 55
+PULSE_WIDTH_STDEV_PS = 15
 
 class Pulse:
     def __init__(self, net: str, start_time_ps: int, end_time_ps: int):
@@ -47,8 +47,9 @@ def sample_cycle_time(period_ns: int) -> int:
     return random.randint(0, period_ns * 1000)
 
 # sample pulse width from a gaussian dist
+# result is in PS
 def sample_pulse_width() -> int:
-    return np.round(np.random.normal(PULSE_WIDTH_MEAN, PULSE_WIDTH_STDEV, 1))
+    return np.round(np.random.normal(PULSE_WIDTH_MEAN_PS, PULSE_WIDTH_STDEV_PS, 1))
 
 # determine whether a pulse is masked entirely from timing
 # i.e. the pulse begins after the register hold time and settles by the
@@ -146,7 +147,7 @@ def test_main():
     print("Running analyze_faults as script")
     netlists = parse_netlist("full_adder_64bit.vg")
     for module_name, netlist in netlists:
-        print(f"FMR: {analyze_faults(netlist, 5000, TimingInfo(5, 0.1, 0.1))}\n")
+        print(f"FMR: {analyze_faults(netlist, 1000000, TimingInfo(5, 0.1, 0.1))}\n")
 
 if __name__ == '__main__':
     test_main()
