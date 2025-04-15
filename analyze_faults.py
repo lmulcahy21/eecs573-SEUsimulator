@@ -107,17 +107,39 @@ def analyze_faults(netlist: Netlist, num_faults: int, args) -> float:
     # sample nets
     visible_fault_nets = []
     filtered_wire_list = wire_names = [v.name for (k, v) in netlist.wires.items() if not v.is_output]
+    wire_name_to_index = {
+        v.name: i for i, (k, v) in enumerate(netlist.wires.items())
+    }
     for _ in range(0, num_faults):
         net_name, net_idx = sample_net(filtered_wire_list)
-        visible_fault_nets.append(net_idx)
+        visible_fault_nets.append(wire_name_to_index[net_name])
+    # write sampled indices to file
+    INDEX_FILENAME= f"{os.getcwd()}/generated/{netlist.name}_net_indices_hex.gen"
+    with (open(f"generated/{netlist.name}_net_indices_hex.gen", "w")) as f:
+        for i in range(0, len(visible_fault_nets)):
+            f.write(f"{visible_fault_nets[i]:04x}\n")
 
     # generate a testbench
-    gen_testbench(netlist, visible_fault_nets, num_faults)
+    if not args.sim_only:
+        gen_testbench(netlist, visible_fault_nets, num_faults)
 
+        # Compile simulation
+        vcs_cmd = f"{VCS} {VCS_FLAGS} {VCS_SRC} {args.module} -o {SIM_EXE_NAME}"
+        print("Checking build directory...")
+        try:
+            os.makedirs("build", exist_ok=True)
+        except Exception as e:
+            print(f"Error creating/using build directory: {e}")
+            return -1
+        print(f"@@ Running vcs ({vcs_cmd})")
+
+        subprocess.run(vcs_cmd, shell=True)
+    # ensure testbench exists
+    if not os.path.exists(f"generated/testbench.sv"):
+        print("Testbench generation failed")
+        return -1
     # run simulation
-    vcs_cmd = f"{VCS} {VCS_FLAGS} {VCS_SRC} {args.module} -o {SIM_EXE_NAME}"
-    os.makedirs("build", exist_ok=True)
-    subprocess.run(vcs_cmd, shell=True)
+    print(f"@@ Running testbench ./{SIM_EXE_NAME}")
     subprocess.run(f"./{SIM_EXE_NAME}")
 
     # calculate masking ratio

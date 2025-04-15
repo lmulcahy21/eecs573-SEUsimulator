@@ -24,19 +24,26 @@ def validate_args(args) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Nathan")
-    parser.add_argument('--module', metavar='FILE', required=True,
-                        help='Specify the input netlist')
+    parser.add_argument('-m', '--module', metavar='FILE', required=True,
+                        help='Specify the input structural verilog file')
     # parser.add_argument('--period', metavar='PERIOD', )
     # parser.add_argument('--period-unit', metavar='UNIT')
-    parser.add_argument('--num_faults', metavar='NUM', required=True,
+    parser.add_argument('-n', '--num_faults', metavar='VALUE', required=True,
                         help='Specify the number of faults to inject')
     # parser.add_argument('--encoding-scheme', metavar='SCHEME', ) #e.g. AN, etc.
     # parser.add_argument('--setup-time')
     # parser.add_argument('--hold-time')
     # parser.add_argument('--clock-period')
     # parser.add_argument('--clock-period-unit')
+    parser.add_argument(
+        "--sim-only",
+        action="store_true",
+        help="""Re-sample and run the testbench, skipping parsing and testbench generation.
+                Note that the value of --num_faults must be greater than or equal to the
+                value used to generate the testbench, otherwise the testbench may not
+                work correctly.""",
+    )
     args = parser.parse_args()
-
     if not validate_args(args):
         print("Invalid arguments")
         parser.print_help()

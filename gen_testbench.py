@@ -41,6 +41,7 @@ module testbench();
 # TB_RUN_TEST_GEN
 
 TB_INITIAL_BEGIN = """
+    int result;
     initial begin
 """
 
@@ -51,10 +52,21 @@ TB_INITIAL_END = """
             $display("Error opening file. Check path and permissions.");
             $finish;
         end
-
+        if (idx_fd == 0) begin
+            $display("Error opening file. Check path and permissions.");
+            $finish;
+        end
+        // Read in the net indices
         num_masked_faults = 0;
         for (int i = 0; i < `NUM_CYCLES; i++) begin
-            $readmemh(idx_fd, net_idx);
+
+
+            result = $fscanf(idx_fd, "%x\\n", net_idx);
+
+            if (result != 1) begin
+                $display("Error: Failed to read hex value from file");
+                break;
+            end
             run_test(net_names_dict[net_idx]);
         end
 
@@ -67,11 +79,14 @@ endmodule
 """
 
 def gen_testbench(netlist: Netlist, fault_nets: List[int], num_cycles: int):
+    # Num wires is number of wires * each wires width
+    NUM_WIRES = len(netlist.wires.items())
+    INDEX_FILENAME= f"{os.getcwd()}/generated/{netlist.name}_net_indices_hex.gen"
 
     # Wire defines
     tb_module_defines_gen = ""
     tb_module_defines_gen += f"`define NUM_CYCLES {num_cycles}\n"
-    tb_module_defines_gen += f"`define NUM_WIRES {len(netlist.gates)}\n"
+    tb_module_defines_gen += f"`define NUM_WIRES {NUM_WIRES}\n"
 
     tb_net_names_gen = ""
     # for each fault net:
@@ -83,7 +98,7 @@ def gen_testbench(netlist: Netlist, fault_nets: List[int], num_cycles: int):
             netname, netidx = wire_name.rsplit('_', 1)
             tb_net_names_gen += f"\t\t\"testbench.dut.{netname}[{netidx}]\""
         else:
-            tb_net_names_gen += f"\t\t\"testbench.dut.{wire}\""
+            tb_net_names_gen += f"\t\t\"testbench.dut.{wire_name}\""
         # style and commas
         if i != (len(netlist.wires) - 1):
             tb_net_names_gen += ","
@@ -94,11 +109,8 @@ def gen_testbench(netlist: Netlist, fault_nets: List[int], num_cycles: int):
 
     #   - store index in 32-bit value,
     # write to generated file ({module}_net_indices_hex.gen)
-    with (open(f"generated/{netlist.name}_net_indices_hex.gen", "w")) as f:
-        for i in range(0, len(fault_nets)):
-            f.write(f"{fault_nets[i]:04x}\n")
 
-    INDEX_FILENAME= f"{os.getcwd()}/generated/{netlist.name}_net_indices_hex.gen"
+
 
     # Portlist generation
     tb_portlist_gen = ""
@@ -150,7 +162,7 @@ def gen_testbench(netlist: Netlist, fault_nets: List[int], num_cycles: int):
     tb_run_test_gen += "\tendtask\n"
     # open file descriptor for logging
     tb_open_fd_gen = f"\t\tfd = $fopen(\"{os.getcwd()}/generated/tb_output.txt\", \"w\");"
-    tb_open_fd_gen += f"\n\t\tidx_fd = $fopen(\"{INDEX_FILENAME}\", \"r\");\n"
+    tb_open_fd_gen += f"\n\t\tidx_fd = $fopen(\"{INDEX_FILENAME}\", \"rb\");\n"
 
 
     # build testbench string
