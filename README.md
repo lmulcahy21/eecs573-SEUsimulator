@@ -9,13 +9,12 @@ Note that Pyverilog also requires icarus verilog for their parser, which can be 
 When installing `iverilog` on shared machines, make sure when compiling to set the prefix properly to avoid needing root access.
 
 
-Here is a brief installation guide, but results may vary.
+Here is a brief installation guide after cloning, but mileage may vary.
 
 ```bash
 $ python3.11 -m venv env
 $ source env/bin/activate
-
-(env) $ git clone https://github.com/steveicarus/iverilog.git
+(env) $ git submodule init --update --recursive
 (env) $ cd ./iverilog/
 (env) $ ./configure --prefix=/your/path/to/wherever/you/want/such_that_its_in_$PATH/we_used_/env/
 (env) $ make
