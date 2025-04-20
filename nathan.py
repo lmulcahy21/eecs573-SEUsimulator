@@ -41,6 +41,8 @@ def main():
                         help='Specify the number of faults to inject')
     parser.add_argument('-l', '--gate_library', metavar='LIB', required=True,
                         help='Specify the gate library to use for parsing and simulation')
+    parser.add_argument('-s', '--sdf', metavar='FILE', required=False,
+                        help='Specify module timing information in Standard Data Format (SDF)')
     parser.add_argument('-p', '--period', metavar='PERIOD', required=True,
                         help='Specify the clock period in nanoseconds (ns)')
     parser.add_argument('-st', '--setup_time', metavar='TIME', required=True,
@@ -52,13 +54,13 @@ def main():
     # parser.add_argument('--encoding-scheme', metavar='SCHEME', ) #e.g. AN, etc.
     args = parser.parse_args()
     if not validate_args(args):
-        print("Invalid arguments")
         parser.print_help()
         return
 
     netlists = parse_netlist(args.module)
     assert len(netlists) == 1 # TODO: remove this? not sure.
     for module_name, netlist in netlists:
+        
         timing_info = TimingInfo(float(args.period), float(args.setup_time, float(args.hold_time)))
         fmr = analyze_faults(netlist, int(args.num_faults), timing_info)
     print(f"\nFMR: {fmr}\n")

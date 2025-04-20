@@ -190,9 +190,9 @@ def gen_testbench(netlist: Netlist, num_faults: int):
         f.write(testbench_str)
 
 def test_main():
-    netlists = parse_netlist("full_adder_64bit.vg")
+    netlists = parse_netlist("modules/full_adder_64bit.vg")
     for module_name, netlist in netlists:
-        gen_testbench(netlist, ["n272", "n273", "n274", "n275", "n276"], 5)
+        gen_testbench(netlist, 5)
 
 if __name__ == '__main__':
     test_main()
