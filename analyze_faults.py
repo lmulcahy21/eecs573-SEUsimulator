@@ -12,7 +12,7 @@ VCS_FLAGS = "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line \
              +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED \
              -timescale=1ps/1ps +vpi"
 GATE_LIB = "/usr/caen/misc/class/eecs470/lib/verilog/lec25dscc25.v"
-VCS_SRC = f"{GATE_LIB} generated/testbench/testbench.sv net_force.c"
+VCS_SRC = f"{GATE_LIB} tb_timing.sv net_force.c"
 SIM_EXE_NAME = "build/simv"
 
 # TODO: tune these parameters
@@ -138,7 +138,7 @@ def analyze_faults(netlist: Netlist, num_faults: int, timing_info: TimingInfo) -
         for (net_name, is_timing_masked, is_metastable) in fault_nets:
             # convert to index in the filtered wire list
             net_idx = wire_name_to_index[net_name]
-            f.write(f"{net_idx:04x} {is_timing_masked:01b} {is_metastable:01b}\n")
+            f.write(f"{net_idx:04x}\n")
 
     # generate a testbench
     num_logic_masked_faults = 0
@@ -163,13 +163,60 @@ def analyze_faults(netlist: Netlist, num_faults: int, timing_info: TimingInfo) -
 
     return fault_mask_ratio
 
+def test(netlist: Netlist, num_faults: int):
+    filtered_wire_list = [v.name for (k, v) in netlist.wires.items() if not v.is_output]
+    wire_name_to_index = {
+        v.name: i for i, (k, v) in enumerate(netlist.wires.items())
+    }
+
+    sampled_net_list = []
+    for _ in range(0, num_faults):
+        net_name, net_idx = sample_net(filtered_wire_list)
+        sampled_net_list.append(net_name)
+
+
+    fault_nets = []
+
+    for net_name in sampled_net_list:
+        fault_nets.append((net_name))
+
+    # write visible indices to file
+    INDEX_FILENAME= f"{os.getcwd()}/generated/testbench/{netlist.name}_net_indices_hex.gen"
+    with (open(INDEX_FILENAME, "w")) as f:
+        for net_name in fault_nets:
+            # convert to index in the filtered wire list
+            net_idx = wire_name_to_index[net_name]
+            f.write(f"{net_idx:04x}\n")
+
+    # generate a testbench
+    num_logic_masked_faults = 0
+    if len(fault_nets) != 0:
+        #gen_testbench(netlist, len(fault_nets))
+
+        # run simulation
+        vcs_cmd = f"{VCS} {VCS_FLAGS} {VCS_SRC} {netlist.filepath} -o {SIM_EXE_NAME}"
+        os.makedirs("build", exist_ok=True)
+        subprocess.run(vcs_cmd, shell=True)
+        subprocess.run(f"./{SIM_EXE_NAME}")
+
+        # calculate masking ratio
+    #     with open("generated/testbench/tb_output.txt", "r") as f:
+    #         num_logic_masked_faults = int(f.read().strip())
+
+    # fault_mask_ratio = num_logic_masked_faults / num_faults
+
+    # print("TIMING MASKED: ", num_timing_masked_faults)
+    # print("METASTABLE: ", num_metastable_faults)
+    # print("LOGIC MASKED: ", num_logic_masked_faults)
+
 def test_main():
     print("Running analyze_faults as script")
     netlists = parse_netlist("modules/full_adder_64bit.vg")
     print("Parsed netlist")
     for module_name, netlist in netlists:
         #print(netlist.wires)
-        print(f"FMR: {analyze_faults(netlist, 1000000, TimingInfo(5, 0.1, 0.1))}\n")
+        #print(f"FMR: {analyze_faults(netlist, 100, TimingInfo(10, 0.08, 0.02))}\n")
+        test(netlist, 1000)
 
 if __name__ == '__main__':
     test_main()

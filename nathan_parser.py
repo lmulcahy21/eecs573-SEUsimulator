@@ -151,7 +151,7 @@ class Netlist:
 
 
         output_wires = list(filter(lambda v: v.is_output, [v for (k,v) in self.wires.items()]))
-        self.calculate_delays(output_wires, sdf_filepath="sdf/fa.syn.sdf")
+        #self.calculate_delays(output_wires, sdf_filepath="sdf/fa.syn.sdf")
         # output wire (0) -> driving gate -> input wires (1) -> driving gates -> input wires (2) -> driving gate (3)
         return
 
