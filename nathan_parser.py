@@ -1,7 +1,7 @@
 import argparse
 from pyverilog.vparser.parser import parse
 from pyverilog.ast_code_generator.codegen import ASTCodeGenerator
-
+from sdf import get_delays
 # Parse Verilog file
 import pyverilog.vparser.ast as ast
 from pyverilog.vparser.ast import *
@@ -151,30 +151,38 @@ class Netlist:
 
 
         output_wires = list(filter(lambda v: v.is_output, [v for (k,v) in self.wires.items()]))
-        self.calculate_delays(output_wires)
+        self.calculate_delays(output_wires, sdf_filepath="sdf/fa.syn.sdf")
         # output wire (0) -> driving gate -> input wires (1) -> driving gates -> input wires (2) -> driving gate (3)
         return
 
-    def calculate_delays(self, output_wires: List[GraphWire]) -> None:
+    def calculate_delays(self, output_wires: List[GraphWire], sdf_filepath = None) -> None:
         """Calculate the delays from output wires to input wires."""
-        # use a stack to traverse the graph
-        # print(output_wires)
+        sdf_obj = None
+        if sdf_filepath is not None:
+            sdf_obj = get_delays(sdf_filepath)
+            # make sdf a bit nicer, get the dict of each cell by name
+            print(sdf_obj)
+        
         stack = LifoQueue()
         for wire in output_wires:
             stack.put((wire, None))  # push the output wire and None as the previous gate
+
+        # if sdf file, use that to parse and calc delays
 
         # max output delay to a wire/gate is the max of the current and the gate we came from's delay (plus one if we're a gate)
         while not stack.empty():
             # stack tuple holds a pair of (wire, gate that takes wire as input) so (wire, load_gate)
             t: Tuple[GraphWire, GraphGate] = stack.get()
             wire, load_gate = t
+            # load_gate being None means its an output wire, and thus has distance 0
             if load_gate is not None:
-                # if the load gate is not None, intermed or input wire
                 wire.output_distance = max(wire.output_distance, load_gate.output_distance + 1)
                 wire.output_delay = max(wire.output_delay, load_gate.output_delay) # don't add, because gates come with own delay
+                # gate loading this wire should have
+
             driving_gate = None
             if wire.driver:
-                # process driving gate, should only ever happen once per gate BUT JUST IN CASE
+                # process gate driving this wire, should only ever happen once per gate BUT JUST IN CASE
                 driving_gate = wire.driver
                 driving_gate.output_distance = max(wire.output_distance, driving_gate.output_distance)
                 # delay is max of wire output delay + self delay, max is just for sanity, should only get set once
@@ -271,26 +279,7 @@ def main():
     args = parser.parse_args()
 
     netlist_filename = args.input_file
-
-    ast, directives = parse([netlist_filename])
-    instances = []
-    visitor = NetListVisitor()
-    visitor.visit(ast)
-    for module_name, netlist in visitor.module_netlists.items():
-        print(f"Module: {netlist.name}")
-        print("Inputs:")
-        for input in netlist.inputs:
-            print(input)
-        print("Outputs:")
-        for output in netlist.outputs:
-            print(output)
-        print("Wires:")
-        for wire in netlist.wires.values():
-            print(wire)
-        print("Gates:")
-        for gate in netlist.gates.values():
-            print(gate)
-        print(f"Num wires: {len(netlist.wires)}")
+    netlist = parse_netlist(netlist_filename)
 
 
 

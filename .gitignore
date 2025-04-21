@@ -1,5 +1,4 @@
 env/
-iverilog
 *.txt
 a.py
 generated/
@@ -8,4 +7,6 @@ build/
 ucli.key
 Makefile
 *.tcl
-
+cksum_dir/
+csrc
+synth
