@@ -1,6 +1,8 @@
 [submodule "benchmarks"]
 	path = benchmarks
 	url = git@github.com:lsils/benchmarks.git
+    ignore = dirty
 [submodule "iverilog"]
 	path = iverilog
 	url = https://github.com/steveicarus/iverilog.git
+    ignore = dirty
