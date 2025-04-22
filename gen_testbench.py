@@ -1,7 +1,7 @@
 from nathan_parser import Netlist, parse_netlist
 from typing import List
 import os
-from nathan import TimingInfo
+from nathan_types import TimingInfo
 
 def gen_testbench_string(netlist: Netlist, timing_info: TimingInfo, num_faults: int, sdf_filename: str) -> str:
     filtered_wires = {key: value for (key, value) in netlist.wires.items() if not value.is_input}
