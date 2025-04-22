@@ -1,10 +1,11 @@
 from nathan_parser import Netlist, parse_netlist, GraphWire
-from gen_testbench import gen_testbench
+from gen_testbench_new import gen_testbench
 import random
 import numpy as np
 import subprocess
 import os
 from typing import List, Tuple
+from nathan import TimingInfo
 
 VCS = "vcs"
 VCS_FLAGS = "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line \
@@ -12,7 +13,7 @@ VCS_FLAGS = "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line \
              +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED \
              -timescale=1ps/1ps +vpi +sdfverbose"
 GATE_LIB = "/usr/caen/misc/class/eecs470/lib/verilog/lec25dscc25.v"
-VCS_SRC = f"{GATE_LIB} tb_timing.sv net_force.c"
+VCS_SRC = f"{GATE_LIB} generated/testbench/testbench.sv net_force.c"
 SIM_EXE_NAME = "build/simv"
 
 # TODO: tune these parameters
@@ -24,17 +25,6 @@ class Pulse:
         self.net = net
         self.start_time_ps = start_time_ps
         self.end_time_ps = end_time_ps
-
-class TimingInfo:
-    def __init__(self, clock_period_ns: float, setup_time_ns: float, hold_time_ns: float):
-        self.clock_period_ns = clock_period_ns
-        self.clock_period_ps = np.round(clock_period_ns * 1000)
-
-        self.setup_time_ns = setup_time_ns
-        self.setup_time_ps = np.round(setup_time_ns * 1000)
-
-        self.hold_time_ns = hold_time_ns
-        self.hold_time_ps = np.round(hold_time_ns * 1000)
 
 def sample_net_index(wire_list: List[str]) -> int:
     # sample a net to modify from a uniform dist
@@ -164,54 +154,16 @@ def analyze_faults(netlist: Netlist, num_faults: int, timing_info: TimingInfo) -
     return fault_mask_ratio
 
 def test(netlist: Netlist, num_faults: int):
-    filtered_wire_list = [v.name for (k, v) in netlist.wires.items() if not v.is_output]
-    wire_name_to_index = {
-        v.name: i for i, (k, v) in enumerate(netlist.wires.items())
-    }
-
-    sampled_net_list = []
-    for _ in range(0, num_faults):
-        net_name, net_idx = sample_net(filtered_wire_list)
-        sampled_net_list.append(net_name)
-
-
-    fault_nets = []
-
-    for net_name in sampled_net_list:
-        fault_nets.append((net_name))
-
-    # write visible indices to file
-    INDEX_FILENAME= f"{os.getcwd()}/generated/testbench/{netlist.name}_net_indices_hex.gen"
-    with (open(INDEX_FILENAME, "w")) as f:
-        for net_name in fault_nets:
-            # convert to index in the filtered wire list
-            net_idx = wire_name_to_index[net_name]
-            f.write(f"{net_idx:04x}\n")
-
-    # generate a testbench
-    num_logic_masked_faults = 0
-    if len(fault_nets) != 0:
-        #gen_testbench(netlist, len(fault_nets))
-
-        # run simulation
-        vcs_cmd = f"{VCS} {VCS_FLAGS} {VCS_SRC} {netlist.filepath} -o {SIM_EXE_NAME}"
-        os.makedirs("build", exist_ok=True)
-        subprocess.run(vcs_cmd, shell=True)
-        subprocess.run(f"./{SIM_EXE_NAME}")
-
-        # calculate masking ratio
-    #     with open("generated/testbench/tb_output.txt", "r") as f:
-    #         num_logic_masked_faults = int(f.read().strip())
-
-    # fault_mask_ratio = num_logic_masked_faults / num_faults
-
-    # print("TIMING MASKED: ", num_timing_masked_faults)
-    # print("METASTABLE: ", num_metastable_faults)
-    # print("LOGIC MASKED: ", num_logic_masked_faults)
+    gen_testbench(netlist, TimingInfo(10, 0.05, 0.02), 1000, "sdf/add.syn.sdf")
+    # run simulation
+    vcs_cmd = f"{VCS} {VCS_FLAGS} {VCS_SRC} {netlist.filepath} -o {SIM_EXE_NAME}"
+    os.makedirs("build", exist_ok=True)
+    subprocess.run(vcs_cmd, shell=True)
+    subprocess.run(f"./{SIM_EXE_NAME}")
 
 def test_main():
     print("Running analyze_faults as script")
-    netlists = parse_netlist("modules/full_adder_64bit.vg")
+    netlists = parse_netlist("modules/add.vg")
     print("Parsed netlist")
     for module_name, netlist in netlists:
         #print(netlist.wires)

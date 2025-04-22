@@ -26,6 +26,12 @@ module testbench();
     import "DPI-C" function int release_net_by_name_dpi(input string netname);
     import "DPI-C" function int get_net_value_by_name_dpi(input string netname);
 
+    // clock gen
+    logic clock = 0;
+    always begin
+        #(`CLOCK_PERIOD / 2) clock = ~clock;
+    end
+    
     // dict of module net names which we are sampling from via index
     string net_names_dict[`NUM_WIRES] = '{
         "testbench.faulty.A[0]", "testbench.faulty.A[1]", "testbench.faulty.A[2]", "testbench.faulty.A[3]",
@@ -144,7 +150,7 @@ module testbench();
         "testbench.faulty.n452", "testbench.faulty.n453", "testbench.faulty.n454", "testbench.faulty.n455",
         "testbench.faulty.n456", "testbench.faulty.n457", "testbench.faulty.n458", "testbench.faulty.n459",
         "testbench.faulty.n460", "testbench.faulty.n461", "testbench.faulty.n462", "testbench.faulty.n463",
-        "testbench.faulty.n464", "testbench.faulty.n465", "testbench.faulty.n466", "testbench.faulty.n467",
+        "testbench.faulty.n464", "testbench.faulty.n4testbench_str65", "testbench.faulty.n466", "testbench.faulty.n467",
         "testbench.faulty.n468", "testbench.faulty.n469", "testbench.faulty.n470", "testbench.faulty.n471",
         "testbench.faulty.n472", "testbench.faulty.n473", "testbench.faulty.n474", "testbench.faulty.n475",
         "testbench.faulty.n476", "testbench.faulty.n477", "testbench.faulty.n478", "testbench.faulty.n479",
@@ -154,12 +160,6 @@ module testbench();
         "testbench.faulty.n492", "testbench.faulty.n493", "testbench.faulty.n494", "testbench.faulty.n495",
         "testbench.faulty.n496", "testbench.faulty.n497", "testbench.faulty.n498", "testbench.faulty.n499",
         "testbench.faulty.n500", "testbench.faulty.n501", "testbench.faulty.n502", "testbench.faulty.n503"};
-
-    // clock gen
-    logic clock = 0;
-    always begin
-        #(`CLOCK_PERIOD / 2) clock = ~clock;
-    end
 
     // Input Portlist
     // TODO interfaces?
@@ -232,22 +232,22 @@ module testbench();
     initial begin
 
         for (int i = 0; i < `NUM_FAULTS; i++) begin
+            // sample a net from the netlist
             sampled_idx = $dist_uniform(seed, 0, `NUM_WIRES - 1);
             net_name = net_names_dict[sampled_idx];
+            
+            // sample timing parameters for the pulse
+            fault_start = $dist_uniform(seed, 0, `CLOCK_PERIOD - 1);
+            fault_width = $dist_normal(seed, `PS(55), `PS(15));
+            if (fault_width < 0) fault_width = 0;
 
+            // random inputs
             @(posedge clock);
             assert(std::randomize(A));
             assert(std::randomize(B));
             assert(std::randomize(carry_in));
 
-            fault_start = $dist_uniform(seed, 0, `CLOCK_PERIOD - 1);
-            fault_width = $dist_normal(seed, `PS(55), `PS(15));
-            if (fault_width < 0) fault_width = 0;
-
-            //-----------------------------------------------------------------------
-            //  Random fault specification    (uniform in this clock period)
-            //-----------------------------------------------------------------------
-
+            // fault modeling routine
             @(posedge clock)
             fork
                 //----- 1) inject the bit‑flip ---------------------------------------
