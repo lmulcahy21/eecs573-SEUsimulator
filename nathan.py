@@ -51,6 +51,7 @@ def main():
                         help='Specify the register hold time in nanoseconds (ns)')
     parser.add_argument('-v', '--verbose', action='store_true', required=False,
                         help='Do not suppress additional output')
+    # TRUERANDOM vs seed option - https://www.doulos.com/media/1293/snug2013_sv_random_stability_paper.pdf
     # parser.add_argument('--encoding-scheme', metavar='SCHEME', ) #e.g. AN, etc.
     args = parser.parse_args()
     if not validate_args(args):

@@ -8,8 +8,8 @@
 `timescale 1ps/1ps
 `define PS(ticks) (ticks * 1)
 `define NS(ticks) (ticks * 1000)
-`define NUM_FAULTS 1000
-`define NUM_WIRES 642
+`define NUM_FAULTS 10000
+`define NUM_WIRES 503
 `define CLOCK_PERIOD `NS(10)
 `define T_SU `PS(50)
 `define T_HD `PS(20)
@@ -17,13 +17,16 @@
 
 module testbench();
 
+    // backannotate modules with timing information
     initial $sdf_annotate("sdf/full_adder_64bit.syn.sdf", golden);
     initial $sdf_annotate("sdf/full_adder_64bit.syn.sdf", faulty);
     
+    // DPI hooks for interacting with internal nets via name
     import "DPI-C" function int force_net_by_name_dpi(input string netname, input int value);
     import "DPI-C" function int release_net_by_name_dpi(input string netname);
     import "DPI-C" function int get_net_value_by_name_dpi(input string netname);
 
+    // dict of module net names which we are sampling from via index
     string net_names_dict[`NUM_WIRES] = '{
         "testbench.faulty.A[0]", "testbench.faulty.A[1]", "testbench.faulty.A[2]", "testbench.faulty.A[3]",
         "testbench.faulty.A[4]", "testbench.faulty.A[5]", "testbench.faulty.A[6]", "testbench.faulty.A[7]",
@@ -73,7 +76,7 @@ module testbench();
         "testbench.faulty.S[52]", "testbench.faulty.S[53]", "testbench.faulty.S[54]", "testbench.faulty.S[55]",
         "testbench.faulty.S[56]", "testbench.faulty.S[57]", "testbench.faulty.S[58]", "testbench.faulty.S[59]",
         "testbench.faulty.S[60]", "testbench.faulty.S[61]", "testbench.faulty.S[62]", "testbench.faulty.S[63]",
-        "testbench.faulty.carry_in", "testbench.faulty.carry_out", "testbench.faulty.n642", "testbench.faulty.n192",
+        "testbench.faulty.carry_in", "testbench.faulty.carry_out", "testbench.faulty.n192",
         "testbench.faulty.n193", "testbench.faulty.n194", "testbench.faulty.n195", "testbench.faulty.n196",
         "testbench.faulty.n197", "testbench.faulty.n198", "testbench.faulty.n199", "testbench.faulty.n200",
         "testbench.faulty.n201", "testbench.faulty.n202", "testbench.faulty.n203", "testbench.faulty.n204",
@@ -150,51 +153,16 @@ module testbench();
         "testbench.faulty.n488", "testbench.faulty.n489", "testbench.faulty.n490", "testbench.faulty.n491",
         "testbench.faulty.n492", "testbench.faulty.n493", "testbench.faulty.n494", "testbench.faulty.n495",
         "testbench.faulty.n496", "testbench.faulty.n497", "testbench.faulty.n498", "testbench.faulty.n499",
-        "testbench.faulty.n500", "testbench.faulty.n501", "testbench.faulty.n502", "testbench.faulty.n503",
-        "testbench.faulty.n504", "testbench.faulty.n505", "testbench.faulty.n506", "testbench.faulty.n507",
-        "testbench.faulty.n508", "testbench.faulty.n509", "testbench.faulty.n510", "testbench.faulty.n511",
-        "testbench.faulty.n512", "testbench.faulty.n513", "testbench.faulty.n514", "testbench.faulty.n515",
-        "testbench.faulty.n516", "testbench.faulty.n517", "testbench.faulty.n518", "testbench.faulty.n519",
-        "testbench.faulty.n520", "testbench.faulty.n521", "testbench.faulty.n522", "testbench.faulty.n523",
-        "testbench.faulty.n524", "testbench.faulty.n525", "testbench.faulty.n526", "testbench.faulty.n527",
-        "testbench.faulty.n528", "testbench.faulty.n529", "testbench.faulty.n530", "testbench.faulty.n531",
-        "testbench.faulty.n532", "testbench.faulty.n533", "testbench.faulty.n534", "testbench.faulty.n535",
-        "testbench.faulty.n536", "testbench.faulty.n537", "testbench.faulty.n538", "testbench.faulty.n539",
-        "testbench.faulty.n540", "testbench.faulty.n541", "testbench.faulty.n542", "testbench.faulty.n543",
-        "testbench.faulty.n544", "testbench.faulty.n545", "testbench.faulty.n546", "testbench.faulty.n547",
-        "testbench.faulty.n548", "testbench.faulty.n549", "testbench.faulty.n550", "testbench.faulty.n551",
-        "testbench.faulty.n552", "testbench.faulty.n553", "testbench.faulty.n554", "testbench.faulty.n555",
-        "testbench.faulty.n556", "testbench.faulty.n557", "testbench.faulty.n558", "testbench.faulty.n559",
-        "testbench.faulty.n560", "testbench.faulty.n561", "testbench.faulty.n562", "testbench.faulty.n563",
-        "testbench.faulty.n564", "testbench.faulty.n565", "testbench.faulty.n566", "testbench.faulty.n567",
-        "testbench.faulty.n568", "testbench.faulty.n569", "testbench.faulty.n570", "testbench.faulty.n571",
-        "testbench.faulty.n572", "testbench.faulty.n573", "testbench.faulty.n574", "testbench.faulty.n575",
-        "testbench.faulty.n576", "testbench.faulty.n577", "testbench.faulty.n578", "testbench.faulty.n579",
-        "testbench.faulty.n580", "testbench.faulty.n581", "testbench.faulty.n582", "testbench.faulty.n583",
-        "testbench.faulty.n584", "testbench.faulty.n585", "testbench.faulty.n586", "testbench.faulty.n587",
-        "testbench.faulty.n588", "testbench.faulty.n589", "testbench.faulty.n590", "testbench.faulty.n591",
-        "testbench.faulty.n592", "testbench.faulty.n593", "testbench.faulty.n594", "testbench.faulty.n595",
-        "testbench.faulty.n596", "testbench.faulty.n597", "testbench.faulty.n598", "testbench.faulty.n599",
-        "testbench.faulty.n600", "testbench.faulty.n601", "testbench.faulty.n602", "testbench.faulty.n603",
-        "testbench.faulty.n604", "testbench.faulty.n605", "testbench.faulty.n606", "testbench.faulty.n607",
-        "testbench.faulty.n608", "testbench.faulty.n609", "testbench.faulty.n610", "testbench.faulty.n611",
-        "testbench.faulty.n612", "testbench.faulty.n613", "testbench.faulty.n614", "testbench.faulty.n615",
-        "testbench.faulty.n616", "testbench.faulty.n617", "testbench.faulty.n618", "testbench.faulty.n619",
-        "testbench.faulty.n620", "testbench.faulty.n621", "testbench.faulty.n622", "testbench.faulty.n623",
-        "testbench.faulty.n624", "testbench.faulty.n625", "testbench.faulty.n626", "testbench.faulty.n627",
-        "testbench.faulty.n628", "testbench.faulty.n629", "testbench.faulty.n630", "testbench.faulty.n631",
-        "testbench.faulty.n632", "testbench.faulty.n633", "testbench.faulty.n634", "testbench.faulty.n635",
-        "testbench.faulty.n636", "testbench.faulty.n637", "testbench.faulty.n638", "testbench.faulty.n639",
-        "testbench.faulty.n640", "testbench.faulty.n641" };
-    // -----------------------------------------------------------------
-    //  DUTs and basic infrastructure
-    // -----------------------------------------------------------------
+        "testbench.faulty.n500", "testbench.faulty.n501", "testbench.faulty.n502", "testbench.faulty.n503"};
+
+    // clock gen
     logic clock = 0;
     always begin
         #(`CLOCK_PERIOD / 2) clock = ~clock;
     end
 
     // Input Portlist
+    // TODO interfaces?
 	logic [63:0] A;
 	logic [63:0] B;
 	logic [0:0] carry_in;
@@ -207,7 +175,8 @@ module testbench();
     logic [63:0] S_faulty;
 	logic [0:0] carry_out_faulty;
 
-    full_adder_64bit golden ( // fault free
+    // fault free (golden) model
+    full_adder_64bit golden (
 		// Inputs
 		.A (A),
 		.B (B),
@@ -217,7 +186,8 @@ module testbench();
 		.carry_out (carry_out_golden)
 	);
 
-    full_adder_64bit faulty ( // will have bitflip induced
+    // faulty model which will be subjected to faults
+    full_adder_64bit faulty ( 
 		// Inputs
 		.A (A),
 		.B (B),
@@ -227,51 +197,52 @@ module testbench();
 		.carry_out (carry_out_faulty)
 	);
 
+    // is there a difference between the two module outputs
     logic diff;
     assign diff = S_faulty != S_golden ||
-			carry_out_faulty != carry_out_golden;
+		carry_out_faulty != carry_out_golden;
 
-    // -----------------------------------------------------------------
-    //  Parameters for the campaign
-    // -----------------------------------------------------------------
+    // seed
+    int seed = 42;
+
+    // Statistic counters maintained throughout campaign
     int  masked_timing = 0;   // 1) timing‑masked (between hold & setup)
-    int  meta_hit      = 0;   // 2) setup/hold violation → metastability
-    int  masked_logic  = 0;   // 3) logic‑masked (fault seen but vanishes)
+    int  meta_hit      = 0;   // 2) setup/hold violation --> metastability
+    int  masked_logic  = 0;   // 3) logic‑masked (fault crosses clock edge but doesn't have observable effects)
     int  observed      = 0;   // 4) captured & visible
 
-    int net_idx_array[`NUM_FAULTS];
-
-    time  fault_start;
-    time  fault_width; 
-    time  fault_end;   
-    logic metastable; 
-    logic diverged;   
-    time  edge_now;
-    time  edge_next;
-    time  hd_period_end;
-    time  su_period_start; 
-    time last_diff;
-    logic is_timing_masked;
+    // intermediate variables
+    int          sampled_idx;
+    int          fault_start;
+    int          fault_width; 
+    time         fault_end;   
+    logic        metastable; 
+    logic        diverged;   
+    time         edge_now;
+    time         edge_next;
+    time         hd_period_end;
+    time         su_period_start; 
+    time         last_diff;
+    logic        is_timing_masked;
     logic [63:0] S_faulty_old;
-    logic [0:0] carry_out_faulty_old;
-    string net_name;
+    logic [0:0]  carry_out_faulty_old;
+    string       net_name;
 
-    // -----------------------------------------------------------------
-    //  Fault‑injection campaign
-    // -----------------------------------------------------------------
+    // fault injection campaign
     initial begin
-        $readmemh("/home/jcparkes/eecs/573/eecs573-SEUsimulator/generated/testbench/full_adder_64bit_net_indices_hex.gen", net_idx_array);
 
         for (int i = 0; i < `NUM_FAULTS; i++) begin
-            net_name = net_names_dict[net_idx_array[i]];
+            sampled_idx = $dist_uniform(seed, 0, `NUM_WIRES - 1);
+            net_name = net_names_dict[sampled_idx];
 
             @(posedge clock);
             assert(std::randomize(A));
             assert(std::randomize(B));
             assert(std::randomize(carry_in));
 
-            fault_start = $urandom_range(0, `CLOCK_PERIOD - 1);
-            fault_width = $urandom_range(`PS(100), `PS(300));
+            fault_start = $dist_uniform(seed, 0, `CLOCK_PERIOD - 1);
+            fault_width = $dist_normal(seed, `PS(55), `PS(15));
+            if (fault_width < 0) fault_width = 0;
 
             //-----------------------------------------------------------------------
             //  Random fault specification    (uniform in this clock period)
@@ -308,7 +279,6 @@ module testbench();
                         end
                     end 
 
-                    if (metastable) $display("A");
 
                     while ($time < su_period_start) begin
                         #(`TIMESTEP)
@@ -332,45 +302,38 @@ module testbench();
                         end
                     end 
 
-                    if (metastable) $display("BB");
+
+                    @(posedge clock);
+                    S_faulty_old = S_faulty;
+                    carry_out_faulty_old = carry_out_faulty;
+
+                    edge_now = $time;
+                    while ($time < (edge_now + `T_HD)) begin
+                        #(`TIMESTEP)
+                        if (diff) begin
+                            last_diff = $time;
+                            diverged = 1;
+                        end
+                        if ((S_faulty != S_faulty_old) || (carry_out_faulty != carry_out_faulty_old)) begin
+                            //$display("S_faulty: %h, S_faulty_old: %h", S_faulty, S_faulty_old); 
+                            metastable = 1;
+                        end
+                    end
                 end
             join
-
-            //-----------------------------------------------------------------------
-            //  3) sample at the active clock edge & classify the trial
-            //-----------------------------------------------------------------------
-            @(posedge clock);
-            S_faulty_old = S_faulty;
-            carry_out_faulty_old = carry_out_faulty;
-
-            edge_now = $time;
-            while ($time < (edge_now + `T_HD)) begin
-                #(`TIMESTEP)
-                if (diff) begin
-                    last_diff = $time;
-                    diverged = 1;
-                end
-                if ((S_faulty != S_faulty_old) || (carry_out_faulty != carry_out_faulty_old)) begin
-                    //$display("S_faulty: %h, S_faulty_old: %h", S_faulty, S_faulty_old); 
-                    metastable = 1;
-                end
-            end
 
             is_timing_masked = 0;
 
             if (metastable) meta_hit++;
             if (!diverged)  masked_logic++;
             if (!metastable && diverged && (last_diff < (edge_now - `T_SU))) begin 
-                $display("last_diff: %d, limit: %d", (last_diff), ((edge_now - `T_SU)));
                 masked_timing++;  // never reached sampling FF
                 is_timing_masked = 1;
             end
             if (!metastable && diverged && !is_timing_masked) observed++; 
         end
 
-        //--------------------------------------------------------------------------
-        //  PRINT SUMMARY
-        //--------------------------------------------------------------------------
+        // print summary
         $display("\n-----  fault‑injection summary (%0d trials) -----", `NUM_FAULTS);
         $display("1) timing‑masked        : %0d", masked_timing);
         $display("2) setup/hold violation : %0d", meta_hit);

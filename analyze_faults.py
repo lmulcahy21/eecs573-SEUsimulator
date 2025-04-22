@@ -10,7 +10,7 @@ VCS = "vcs"
 VCS_FLAGS = "-sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line \
              -full64 -kdb -lca -nc -debug_access+all+reverse +warn=noTFIPC \
              +warn=noDEBUG_DEP +warn=noENUMASSIGN +warn=noLCA_FEATURES_ENABLED \
-             -timescale=1ps/1ps +vpi"
+             -timescale=1ps/1ps +vpi +sdfverbose"
 GATE_LIB = "/usr/caen/misc/class/eecs470/lib/verilog/lec25dscc25.v"
 VCS_SRC = f"{GATE_LIB} tb_timing.sv net_force.c"
 SIM_EXE_NAME = "build/simv"
@@ -216,7 +216,7 @@ def test_main():
     for module_name, netlist in netlists:
         #print(netlist.wires)
         #print(f"FMR: {analyze_faults(netlist, 100, TimingInfo(10, 0.08, 0.02))}\n")
-        test(netlist, 1000)
+        test(netlist, 10000)
 
 if __name__ == '__main__':
     test_main()
