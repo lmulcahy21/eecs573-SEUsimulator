@@ -1,11 +1,9 @@
 [submodule "benchmarks"]
 	path = benchmarks
 	url = https://github.com/lsils/benchmarks.git
-    ignore = dirty
-[submodule "iverilog"]
-	path = iverilog
-	url = https://github.com/steveicarus/iverilog.git
-    ignore = dirty
 [submodule "f4pga_sdf_timing"]
 	path = f4pga_sdf_timing
 	url = git@github.com:chipsalliance/f4pga-sdf-timing.git
+[submodule "iverilog"]
+	path = iverilog
+	url = https://github.com/steveicarus/iverilog

@@ -13,7 +13,3 @@ synth
 *.log
 *.sv
 modules/
-s.sh
-graphs_and_charts*
-*.png
-iverilog/
