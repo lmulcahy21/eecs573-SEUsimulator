@@ -12,30 +12,41 @@ When installing `iverilog` on shared machines, make sure when compiling to set t
 Here is a brief installation guide after cloning, but mileage may vary.
 
 ```bash
+# setup a virtual environment
 $ python3.11 -m venv env
 $ source env/bin/activate
-(env) $ git submodule init --update --recursive
+# initialize submodules
+(env) $ git submodule init
+(env) $ git submodule update
+# iVerilog installation guide: https://github.com/steveicarus/iverilog?tab=readme-ov-file#compiling-from-github
 (env) $ cd ./iverilog/
-(env) $ ./configure --prefix=/your/path/to/wherever/you/want/such_that_its_in_$PATH/we_used_/env/
+(env) $ sh autoconf.sh
+(env) $ ./configure --prefix=/path/to/your/env # We used env as a base for installing iverilog, ensure it is on $PATH and provide the absolute directory
 (env) $ make
 (env) $ make install
-
-(env) $ python -m pip install pyverilog
-(env) $ python nathan.py --module [SYNTHESIZED_MODULE.vg] --num_faults [N]
+# install dependencies
+(env) $ python -m pip install pyverilog numpy
+# run NATHAN
+(env) $ python nathan.py -m [SYNTHESIZED_MODULE.vg] -n [N] -l [path/to/cell_lib] -s [sdf_filepath] -p [Clock period] -st [setup time] -ht [hold time]
 ```
 
 
 ## Usage
 
 ```
---module: FILENAME
-        Filename containing the structural verilog code for simulation.
-        Currently expects files in the format of the Synopsis Design
-        Compiler, as the specifications of output files from synthesis
-        are sparsely documented. The parser *should* work for other
-        formats, but expects .Q(output_net) to hold the output for a
-        gate, so milage may vary.
+  -h, --help            show this help message and exit
+  -m FILE, --module FILE
+                        Specify the input netlist
+  -n NUM, --num_faults NUM
+                        Specify the number of faults to inject
+  -l LIB, --gate_library LIB
+                        Specify the gate library to use for parsing and simulation
+  -s FILE, --sdf FILE   Specify module timing information in Standard Data Format (SDF)
+  -p PERIOD, --period PERIOD
+                        Specify the clock period in nanoseconds (ns)
+  -st TIME, --setup_time TIME
+                        Specify the register setup time in nanoseconds (ns)
+  -ht TIME, --hold_time TIME
+                        Specify the register hold time in nanoseconds (ns)
 
---num_faults: Int
-        Number of trials to run
 ```
