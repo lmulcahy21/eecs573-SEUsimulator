@@ -92,7 +92,7 @@ class GraphGate:
         # process the portlist to get input/output wires
         visitor = self.GateVisitor()
         visitor.visit(gate_instance)
-        self.inputs = [wires[s] for s in visitor.inputs]
+        self.inputs = [wires[s] for s in visitor.inputs if s]
         self.output = wires[visitor.output] if visitor.output else None
 
     def __repr__(self):
@@ -162,7 +162,7 @@ class Netlist:
             sdf_obj = get_delays(sdf_filepath)
             # make sdf a bit nicer, get the dict of each cell by name
             print(sdf_obj)
-        
+
         stack = LifoQueue()
         for wire in output_wires:
             stack.put((wire, None))  # push the output wire and None as the previous gate
