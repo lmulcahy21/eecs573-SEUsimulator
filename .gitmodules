@@ -6,6 +6,3 @@
 	path = iverilog
 	url = https://github.com/steveicarus/iverilog.git
     ignore = dirty
-[submodule "f4pga_sdf_timing"]
-	path = f4pga_sdf_timing
-	url = git@github.com:chipsalliance/f4pga-sdf-timing.git
